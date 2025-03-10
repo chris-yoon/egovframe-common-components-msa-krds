@@ -47,9 +47,9 @@ Thumbs.db
 *.did
 verifyConfig.json
 searchConfig.json
-application-local.yml
-application-dev.yml
-application-prod.yml
+# application-local.yml
+# application-dev.yml
+# application-prod.yml
 
 # OpenSearch Model Files
 EgovSearch-workspace/model/model.onnx
