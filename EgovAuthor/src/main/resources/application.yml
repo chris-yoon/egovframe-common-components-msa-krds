@@ -1,0 +1,62 @@
+server:
+  port: 0 # random port
+
+egov:
+  page:
+    size: 10
+    unit: 10
+
+spring:
+  application:
+    name: EgovAuthor
+  main:
+    allow-bean-definition-overriding: true
+  config:
+    import: optional:configserver:http://localhost:8888
+  profiles:
+    active: local
+  datasource:
+    driver-class-name: ${datasource.driver-class-name:com.mysql.cj.jdbc.Driver}
+    url: ${datasource.url:jdbc:mysql://localhost:3306/com}
+    username: ${datasource.username:com}
+    password: ${datasource.password:com01}
+    hikari:
+      maximum-pool-size: ${datasource.hikari.maximum-pool-size:20}
+      connection-timeout: ${datasource.hikari.connection-timeout:20000}
+      idle-timeout: ${datasource.hikari.idle-timeout:30000}
+      minimum-idle: ${datasource.hikari.minimum-idle:5}
+      max-lifetime: ${datasource.hikari.max-lifetime:180000}
+  jpa:
+    hibernate:
+      ddl-auto: ${jpa.hibernate.ddl-auto:update}
+    open-in-view: ${jpa.open-in-view:false}
+    show-sql: ${jpa.show-sql:true}
+    properties:
+      hibernate:
+        format_sql: ${jpa.properties.hibernate.format_sql:true}
+
+logging:
+  level:
+    org:
+      egovframe:
+        rte: debug
+      springframework:
+        boot:
+          autoconfigure: error
+        web: debug
+    egovframework:
+      com: debug
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+
+org:
+  egovframe:
+    crypto:
+      algorithm: SHA-256
+      algorithmKey: egovframe
+      algorithmKeyHash: gdyYs/IZqY86VcWhT8emCYfqY1ahw2vtLG+/FzNqtrQ=
+      plainDigest: false
