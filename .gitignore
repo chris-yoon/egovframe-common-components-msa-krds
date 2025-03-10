@@ -51,6 +51,13 @@ application-local.yml
 application-dev.yml
 application-prod.yml
 
+# OpenSearch Model Files
+EgovSearch-workspace/model/model.onnx
+EgovSearch-workspace/model/special_tokens_map.json
+EgovSearch-workspace/model/tokenizer.json
+EgovSearch-workspace/model/tokenizer_config.json
+EgovSearch-workspace/model/vocab.txt
+
 # OpenSearch
 /example/*.txt
 /model/
