@@ -1,0 +1,27 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: ConfigServer
+  profiles:
+    active: native, default
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: file:/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/ConfigServer-config
+  rabbitmq:
+    host: ${rabbitmq.hostname:localhost}
+    port: 5672
+    username: guest
+    password: guest
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"  # 모든 actuator endpoint 활성화
+  endpoint:
+    health:
+      show-details: always
