@@ -1,0 +1,81 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# Eclipse
+.classpath
+.project
+.settings/
+.metadata/
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# VS Code
+.vscode/
+
+# Spring Boot
+*.log
+logs/
+spring.log
+
+# Operating System
+.DS_Store
+Thumbs.db
+
+# Application specific
+/config-repo/
+*.wallet
+*.did
+verifyConfig.json
+searchConfig.json
+application-local.yml
+application-dev.yml
+application-prod.yml
+
+# OpenSearch
+/example/*.txt
+/model/
+
+# Build and Deploy
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Node (if using Node.js for frontend)
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Test
+*.test
+test-output/
+/test-results/
+
+# Misc
+*.class
+*.log
+hs_err_pid*
+.env
