@@ -1,0 +1,30 @@
+server:
+  port: 0 # random port
+
+spring:
+  application:
+    name: EgovMain
+  main:
+    allow-bean-definition-overriding: true
+  config:
+    import: optional:configserver:http://localhost:8888
+  profiles:
+    active: local
+    
+logging:
+  level:
+    org:
+      egovframe:
+        rte: debug
+      springframework:
+        boot:
+          autoconfigure: error
+        web: debug
+    egovframework:
+      com: debug
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
