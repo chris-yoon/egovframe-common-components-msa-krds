@@ -200,20 +200,25 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      # - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-com:3306/com
-      # - SPRING_DATASOURCE_USERNAME=com
-      # - SPRING_DATASOURCE_PASSWORD=com01
-      # - OPENSEARCH_PROTOCOL=https
-      # - OPENSEARCH_URL=opensearch_opensearch-node1  # 컨테이너 이름 수정
-      # - OPENSEARCH_PORT=9200
-      # - OPENSEARCH_USERNAME=admin
-      # - OPENSEARCH_PASSWORD=egovFrame123!@#
-      # - OPENSEARCH_KEYSTORE_PATH=/app/cacerts
-      # - OPENSEARCH_KEYSTORE_PASSWORD=changeit
-      # - APP_SEARCH_CONFIG_PATH=/app/config/searchConfig.json
+      - APP_SEARCH_CONFIG_PATH=/app/config/searchConfig-docker.json
+      - OPENSEARCH_KEYSTORE_PATH=/app/cacerts/cacerts
+      - OPENSEARCH_KEYSTORE_PASSWORD=changeit
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-com:3306/com
+      - SPRING_DATASOURCE_USERNAME=com
+      - SPRING_DATASOURCE_PASSWORD=com01
+      - OPENSEARCH_PROTOCOL=https
+      - OPENSEARCH_URL=opensearch_opensearch-node1  # 컨테이너 이름 수정
+      - OPENSEARCH_PORT=9200
+      - OPENSEARCH_USERNAME=admin
+      - OPENSEARCH_PASSWORD=egovFrame123!@#
+      # Add these environment variables for better debugging
+      - LOGGING_LEVEL_EGOVFRAMEWORK_COM_EXT_OPS=DEBUG
+      - LOGGING_LEVEL_ORG_OPENSEARCH=DEBUG
     volumes:
-      - ./config:/app/config
-      - ./cacerts:/app/cacerts  # OpenSearch 인증서
+      - ./EgovSearch-config/config:/app/config:ro
+      - ./EgovSearch-config/model:/app/model
+      - ./EgovSearch-config/cacerts:/app/cacerts:ro
+      - ./EgovSearch-config/example:/app/example
     networks:
       - egov-msa-com-network
       - opensearch_opensearch-net

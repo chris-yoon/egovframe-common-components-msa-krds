@@ -5,11 +5,7 @@ RUN apt-get update && \
     apt-get install -y curl && \
     rm -rf /var/lib/apt/lists/*
 
-# cacerts 파일 복사
-COPY cacerts /app/cacerts
-
 COPY target/*.jar /app/app.jar
-COPY searchConfig.json /app/searchConfig.json
 
 ENV SERVER_PORT=8088 \
     SPRING_APPLICATION_NAME=EgovSearch \

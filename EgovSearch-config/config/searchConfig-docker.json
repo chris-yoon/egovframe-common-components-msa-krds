@@ -1,0 +1,6 @@
+{
+  "modelPath": "/app/model/model.onnx",
+  "tokenizerPath": "/app/model/tokenizer.json",
+  "stopTagsPath": "/app/example/stoptags.txt",
+  "synonymsPath": "/app/example/synonyms.txt",
+  "dictionaryRulesPath": "/app/example/dictionaryRules.txt"}

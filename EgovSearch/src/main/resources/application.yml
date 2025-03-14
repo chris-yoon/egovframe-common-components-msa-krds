@@ -125,4 +125,4 @@ egov:
       size: 5
 
 app:
-  search-config-path: /Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/EgovSearch-workspace/config/searchConfig.json
+  search-config-path: ${APP_SEARCH_CONFIG_PATH:/config/searchConfig.json}

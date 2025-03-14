@@ -53,11 +53,11 @@ searchConfig.json
 # application-prod.yml
 
 # OpenSearch Model Files
-EgovSearch-workspace/model/model.onnx
-EgovSearch-workspace/model/special_tokens_map.json
-EgovSearch-workspace/model/tokenizer.json
-EgovSearch-workspace/model/tokenizer_config.json
-EgovSearch-workspace/model/vocab.txt
+EgovSearch-config/model/model.onnx
+EgovSearch-config/model/special_tokens_map.json
+EgovSearch-config/model/tokenizer.json
+EgovSearch-config/model/tokenizer_config.json
+EgovSearch-config/model/vocab.txt
 
 # OpenSearch
 /example/*.txt
