@@ -1,18 +1,80 @@
+# 공통 설정
+datasource:
+  driver-class-name: com.mysql.cj.jdbc.Driver
+  hikari:
+    maximum-pool-size: 20
+    connection-timeout: 20000
+    idle-timeout: 30000
+    minimum-idle: 5
+    max-lifetime: 1800000
+
 eureka:
   instance:
-    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}} # random port 사용시 eureka server에 인스턴스가 각각 표시되지 않는다
-    preferIpAddress: true # 서비스간 통신 시 hostname 보다 ip 를 우선
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    preferIpAddress: true
   client:
-    register-with-eureka: true # eureka 서버에 등록
-    fetch-registry: true # 외부 검색 가능
+    register-with-eureka: true
+    fetch-registry: true
+
+spring:
+  rabbitmq:
+    port: 5672
+    username: guest
+    password: guest
+
+jpa:
+  hibernate:
+    ddl-auto: update
+  open-in-view: false
+  show-sql: true
+  properties:
+    hibernate:
+      format_sql: true
+
+token:
+  accessSecret: "7FB814B9D7FFB3D675EF1F525C1D61B254227B3B0A771DDDBDFE4112A1F42F66"
+  refreshSecret: "7FB814B9D7FFB3D675EF1F525C1D61B254227B3B0A771DDDBDFE4112A1F42F66"
+  accessExpiration: 1200000
+  refreshExpiration: 3600000
+
+roles:
+  roleAdmin: "/uat/uap/**, /sec/ram/**, /sec/rgm/**, /sec/gmt/**, /sec/rmt/**, /cop/tpl/**, /uss/olp/qmc/**, /uss/olp/qtm/**, /uss/olp/qqm/**, /uss/olp/qim/**, /sym/ccm/cca/**, /sym/ccm/ccc/**, /sym/ccm/cde/**, /ext/ops/**"
+  roleUser: "/cop/bls/**, /cop/bbs/**, /cop/cmy/**, /cop/brd/**, /mip/**, /uss/olp/qri/**, /uss/olp/qrm/**"
+
+---
+# local 프로파일
+spring:
+  config:
+    activate:
+      on-profile: local
+  rabbitmq:
+    host: localhost
+
+datasource:
+  url: jdbc:mysql://localhost:3306/com
+  username: com
+  password: com01
+
+eureka:
+  client:
     service-url:
-      defaultZone: http://admin:admin@${eureka.instance.hostname:localhost}:8761/eureka
+      defaultZone: http://admin:admin@localhost:8761/eureka
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health, info, refresh, bus-refresh
+---
+# docker 프로파일
+spring:
+  config:
+    activate:
+      on-profile: docker
+  rabbitmq:
+    host: bbs_rabbitmq
 
-egov:
-  message: hello!
+datasource:
+  url: jdbc:mysql://mysql-com:3306/com
+  username: com
+  password: com01
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://admin:admin@eureka-server:8761/eureka

@@ -43,6 +43,7 @@ Thumbs.db
 
 # Application specific
 /config-repo/
+/common-all-in-one/
 *.wallet
 *.did
 verifyConfig.json

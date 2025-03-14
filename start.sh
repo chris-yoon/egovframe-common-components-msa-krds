@@ -86,8 +86,16 @@ start_service() {
     local profile=${3:-local}  # 세 번째 인자가 없으면 'local'을 기본값으로 사용
     local service_name=$(basename $jar_path .jar)
     
-    echo "Starting $service_name with profile '$profile'..."
-    nohup java -jar $jar_path --spring.profiles.active=$profile > $log_file 2>&1 &
+    if [ "$service_name" == "ConfigServer" ]; then
+        echo "Starting $service_name with profile '$profile' and config path..."
+        nohup java -jar $jar_path \
+            --spring.profiles.active=$profile \
+            --spring.cloud.config.server.native.search-locations=file:./ConfigServer-config \
+            > $log_file 2>&1 &
+    else
+        echo "Starting $service_name with profile '$profile'..."
+        nohup java -jar $jar_path --spring.profiles.active=$profile > $log_file 2>&1 &
+    fi
     
     # 프로세스가 시작되었는지 확인
     sleep 5

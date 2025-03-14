@@ -10,7 +10,7 @@ spring:
     config:
       server:
         native:
-          search-locations: file:/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/ConfigServer-config
+          search-locations: classpath:/config
   rabbitmq:
     host: ${rabbitmq.hostname:localhost}
     port: 5672
