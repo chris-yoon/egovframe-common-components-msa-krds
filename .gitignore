@@ -58,6 +58,7 @@ EgovSearch-config/model/special_tokens_map.json
 EgovSearch-config/model/tokenizer.json
 EgovSearch-config/model/tokenizer_config.json
 EgovSearch-config/model/vocab.txt
+EgovSearch-config/cacerts/*
 
 # OpenSearch
 /example/*.txt

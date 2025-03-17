@@ -1,5 +1,6 @@
 server:
   port: 9991 # verifyConfig.json에서 sp.serverDomain에 설정한 Port와 동일하게 설정할 것
+
 spring:
   application:
     name: EgovMobileId
@@ -7,9 +8,11 @@ spring:
     allow-bean-definition-overriding: true
   config:
     import: optional:configserver:http://localhost:8888
+  profiles:
+    active: local
 
 app:
-  verify-file-path: ./EgovMobileId/verifyConfig.json # MobileId - configBean이 verify-file-path를 사용함.
+  verify-file-path: ./EgovMobileId/config/verifyConfig.json # MobileId - configBean이 verify-file-path를 사용함.
 
 logging:
   level:

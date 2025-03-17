@@ -174,10 +174,14 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - APP_VERIFY_FILE_PATH=/app/config/verifyConfig-docker.json
+    volumes:
+      - ./EgovMobileId/config:/app/config:ro
     networks:
       - egov-msa-com-network
     depends_on:
-      - gateway-server
+      gateway-server:
+        condition: service_started
 
   egov-questionnaire:
     image: egovquestionnaire:latest
@@ -207,7 +211,7 @@ services:
       - SPRING_DATASOURCE_USERNAME=com
       - SPRING_DATASOURCE_PASSWORD=com01
       - OPENSEARCH_PROTOCOL=https
-      - OPENSEARCH_URL=opensearch_opensearch-node1  # 컨테이너 이름 수정
+      - OPENSEARCH_URL=opensearch-node1  # 컨테이너 이름 수정
       - OPENSEARCH_PORT=9200
       - OPENSEARCH_USERNAME=admin
       - OPENSEARCH_PASSWORD=egovFrame123!@#

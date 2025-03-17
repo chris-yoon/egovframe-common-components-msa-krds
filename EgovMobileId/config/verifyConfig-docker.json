@@ -1,0 +1,55 @@
+{
+    "blockchain": {
+        "account": "egovframe.sp",
+        "serverDomain": "https://bcdev.mobileid.go.kr:18888",
+        "connectTimeout": "3000",
+        "readTimeout": "3000",
+        "useCache": true,
+        "sdkDetailLog": true
+    },
+    "didWalletFile": {
+        "keymanagerPath": "/app/config/sp.wallet",
+        "keymanagerPassword": "egovframe",
+        "signKeyId": "omni.sp",
+        "encryptKeyId": "omni.sp.rsa",
+        "didFilePath": "/app/config/sp.did"
+    },
+    "sp": {
+        "serverDomain": "http://61.253.112.177:9991",
+        "biImageUrl": "https://www.mobileId.go.kr/resources/images/main/mdl_ico_homepage.ico",
+        "biImageBase64": "iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAACOElEQVRIia2Wz04TURSHv3MrwWADTcqfQIKUdOGGxDY2umChazeOiQ8wyEOQrqyrxvgOMo0vMGwwcePaRFMIxLAhVmowRDGtgapA73FRC0qZ6TT0t5t7z_1-587MuecKISq65ZTQfAA4AglEMgCorinUAF-JreS9bCWIIcFg-0QENyyBtlTxFPP0IqMOg2fuOwdkGSERBX7mQg10YcnL-YEGRfe9a4TlnsDnZJWFvHfL6zDoB_xUqg_bO5EWvJwy2HLPryXQgJrFZPNetmIAjDQLfYMDCAkjzQKAFN1yyoj92Bk1w-KLJElg780mpZdHZ1PJGRafJ0nyi43HH3gV4GPVzBqDdcKSOTm2TKQnGP5nbPpRnGSEjRisYxDCDRpNuD7M3RvtkTi59CAH9ePuDoJjgFRo0JcGewwydS_eep6fYHL0N9XtZncD1REDzIRH_WBr2zKSHmcamLs9RPzbIWuN7nxEMiZCGG_LPzkZvcad-THm0gPsb-1SjbIQMMCnrlGrX9mpDzB-f4ypoQbVlaOuSwAU1g0QeBKe6TtbO8fEJ69yZeeA1_uR-AjUDIrfPRQ2Vw-pY9nd-ByNDqD4IYV2eVk1s6Z1hmup_3gtnZ5FVmMFRet9Q6N1q7ECtP4i8l62Ihqte0WRKG67u53WwZKX862ycFm4Vf7rahe2TBU8QUZ6AStaF8U93zI7KnnJy_mqsUxvH15LqrHMeTgE3Cra-tvpHARHISFws5Ut6wI1FN9i_LBryx8ui9qqWLNPmAAAAABJRU5ErkJggg",
+        "isCi": true,
+        "isTelno": true,
+        "checkRequiredPrivacy": true,
+        "checkVcExpirationDate": true
+    },
+    "services": {
+        "egovframe.1": {
+            "spName": "표준프레임워크서버",
+            "serviceName": "대표신분증-일반인증-모든정보",
+            "svcCode": "egovframe.1",
+            "presentType": "1",
+            "encryptType": "2",
+            "keyType": "2",
+            "authType": null
+        }
+    },
+    "push": {
+        "pushServer": "https://mvadev.mobileid.go.kr:11001/api/sendVPAPI.do",
+        "opnPushServer": "https://mipdev.mobileid.go.kr:22443/v1/push/relayto/pushserver",
+        "pushMsCode": "EGOVFRAME_SP",
+        "pushType": "MIP-USP-001"
+    },
+    "caList": [
+        {
+            "appCode": "100",
+            "appName": "모바일 신분증",
+            "appIcon": "/img/mobileId/icon/ic-mobileidcard.svg"
+        },
+        {
+            "appCode": "101",
+            "appName": "삼성월렛",
+            "appIcon": "/img/mobileId/icon/ic-samsungwallet.svg"
+        }
+    ]
+}
