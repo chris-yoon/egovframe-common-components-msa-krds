@@ -1,0 +1,36 @@
+services:
+  egov-board-2:
+    image: egovboard:latest
+    container_name: egov-board-2
+    ports:
+      - "8092:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+    networks:
+      - egov-msa-com-network
+    depends_on:
+      mysql-com:
+        condition: service_healthy
+      gateway-server:
+        condition: service_started
+
+  egov-board-3:
+    image: egovboard:latest
+    container_name: egov-board-3
+    ports:
+      - "8093:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+    networks:
+      - egov-msa-com-network
+    depends_on:
+      mysql-com:
+        condition: service_healthy
+      gateway-server:
+        condition: service_started
+
+networks:
+  egov-msa-com-network:
+    external: true
