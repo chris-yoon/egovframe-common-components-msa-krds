@@ -41,6 +41,10 @@ spring.log
 .DS_Store
 Thumbs.db
 
+# k8s-deploy
+k8s-deploy/data/mysql/
+istio-1.25.0/
+
 # Application specific
 /config-repo/
 /common-all-in-one/

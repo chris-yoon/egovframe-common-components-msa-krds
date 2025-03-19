@@ -60,3 +60,22 @@ org:
       algorithmKey: egovframe
       algorithmKeyHash: gdyYs/IZqY86VcWhT8emCYfqY1ahw2vtLG+/FzNqtrQ=
       plainDigest: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: k8s
+    import: 'optional:configserver:' # Config 서버 비활성화
+  cloud:
+    config:
+      enabled: false # Config 클라이언트 비활성화
+    discovery:
+      enabled: false # Eureka Discovery 비활성화
+
+eureka:
+  client:
+    enabled: false # Eureka 클라이언트 비활성화
+
+server:
+  port: 80 # k8s 환경에서 모든 서비스가 80 포트 사용

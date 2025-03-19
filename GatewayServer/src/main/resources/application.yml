@@ -39,7 +39,7 @@ spring:
             - RedirectTo=302, /main/ # 302 리다이렉트 수행
 
         - id: EgovMain
-          uri: lb://EGOVMAIN
+          uri: ${service.uri.main}  # 변수 사용
           predicates:
             - Path=/main/**
           filters:
@@ -50,14 +50,14 @@ spring:
                 fallbackUri: forward:/fallback/main
 
         - id: EgovLogin
-          uri: lb://EGOVLOGIN
+          uri: ${service.uri.login}  # 변수 사용
           predicates:
             - Path=/uat/uia/**
           filters:
             - RewritePath=/uat/uia/(?<segment>.*), /uat/uia/${segment}
 
         - id: EgovLoginPolicy
-          uri: lb://EGOVLOGIN
+          uri: ${service.uri.login}  # 변수 사용
           predicates:
             - Path=/uat/uap/**
           filters:
@@ -65,7 +65,7 @@ spring:
             - name: Auth
 
         - id: EgovAuthorInfo
-          uri: lb://EGOVAUTHOR
+          uri: ${service.uri.author}  # 변수 사용
           predicates:
             - Path=/sec/ram/**
           filters:
@@ -73,7 +73,7 @@ spring:
             - name: Auth
 
         - id: EgovAuthorGroup
-          uri: lb://EGOVAUTHOR
+          uri: ${service.uri.author}  # 변수 사용
           predicates:
             - Path=/sec/rgm/**
           filters:
@@ -81,7 +81,7 @@ spring:
             - name: Auth
 
         - id: EgovAuthorGroupInfo
-          uri: lb://EGOVAUTHOR
+          uri: ${service.uri.author}  # 변수 사용
           predicates:
             - Path=/sec/gmt/**
           filters:
@@ -89,7 +89,7 @@ spring:
             - name: Auth
 
         - id: EgovRoleInfo
-          uri: lb://EGOVAUTHOR
+          uri: ${service.uri.author}  # 변수 사용
           predicates:
             - Path=/sec/rmt/**
           filters:
@@ -97,7 +97,7 @@ spring:
             - name: Auth
 
         - id: EgovMobileId
-          uri: lb://EGOVMOBILEID
+          uri: ${service.uri.mobileid}  # 변수 사용
           predicates:
             - Path=/mip/**
           filters:
@@ -105,7 +105,7 @@ spring:
             - name: Auth
 
         - id: EgovBlog
-          uri: lb://EGOVBOARD
+          uri: ${service.uri.board}  # 변수 사용
           predicates:
             - Path=/cop/bls/**
           filters:
@@ -113,7 +113,7 @@ spring:
             - name: Auth
 
         - id: EgovBbs
-          uri: lb://EGOVBOARD
+          uri: ${service.uri.board}  # 변수 사용
           predicates:
             - Path=/cop/bbs/**
           filters:
@@ -121,7 +121,7 @@ spring:
             - name: Auth
 
         - id: EgovBoard
-          uri: lb://EGOVBOARD
+          uri: ${service.uri.board}  # 변수 사용
           predicates:
             - Path=/cop/brd/**
           filters:
@@ -129,7 +129,7 @@ spring:
             - name: Auth
 
         - id: EgovCommunity
-          uri: lb://EGOVBOARD
+          uri: ${service.uri.board}  # 변수 사용
           predicates:
             - Path=/cop/cmy/**
           filters:
@@ -137,7 +137,7 @@ spring:
             - name: Auth
 
         - id: EgovTemplate
-          uri: lb://EGOVBOARD
+          uri: ${service.uri.board}  # 변수 사용
           predicates:
             - Path=/cop/tpl/**
           filters:
@@ -145,7 +145,7 @@ spring:
             - name: Auth
 
         - id: EgovQestnrInfo
-          uri: lb://EGOVQUESTIONNAIRE
+          uri: ${service.uri.questionnaire}  # 변수 사용
           predicates:
             - Path=/uss/olp/qmc/**
           filters:
@@ -153,7 +153,7 @@ spring:
             - name: Auth
 
         - id: EgovQustnrRspnsResult
-          uri: lb://EGOVQUESTIONNAIRE
+          uri: ${service.uri.questionnaire}  # 변수 사용
           predicates:
             - Path=/uss/olp/qri/**
           filters:
@@ -161,7 +161,7 @@ spring:
             - name: Auth
 
         - id: EgovQustnrTmplat
-          uri: lb://EGOVQUESTIONNAIRE
+          uri: ${service.uri.questionnaire}  # 변수 사용
           predicates:
             - Path=/uss/olp/qtm/**
           filters:
@@ -169,7 +169,7 @@ spring:
             - name: Auth
 
         - id: EgovQustnrRespondInfo
-          uri: lb://EGOVQUESTIONNAIRE
+          uri: ${service.uri.questionnaire}  # 변수 사용
           predicates:
             - Path=/uss/olp/qrm/**
           filters:
@@ -177,7 +177,7 @@ spring:
             - name: Auth
 
         - id: EgovQustnrQesitm
-          uri: lb://EGOVQUESTIONNAIRE
+          uri: ${service.uri.questionnaire}  # 변수 사용
           predicates:
             - Path=/uss/olp/qqm/**
           filters:
@@ -185,7 +185,7 @@ spring:
             - name: Auth
 
         - id: EgovQusntrItem
-          uri: lb://EGOVQUESTIONNAIRE
+          uri: ${service.uri.questionnaire}  # 변수 사용
           predicates:
             - Path=/uss/olp/qim/**
           filters:
@@ -193,7 +193,7 @@ spring:
             - name: Auth
 
         - id: EgovCmmnClCode
-          uri: lb://EGOVCMMNCODE
+          uri: ${service.uri.cmmncode}  # 변수 사용
           predicates:
             - Path=/sym/ccm/ccc/**
           filters:
@@ -201,7 +201,7 @@ spring:
             - name: Auth
 
         - id: EgovCmmnDetailCode
-          uri: lb://EGOVCMMNCODE
+          uri: ${service.uri.cmmncode}  # 변수 사용
           predicates:
             - Path=/sym/ccm/cde/**
           filters:
@@ -209,7 +209,7 @@ spring:
             - name: Auth
 
         - id: EgovCmmnCode
-          uri: lb://EGOVCMMNCODE
+          uri: ${service.uri.cmmncode}  # 변수 사용
           predicates:
             - Path=/sym/ccm/cca/**
           filters:
@@ -217,7 +217,7 @@ spring:
             - name: Auth
 
         - id: EgovSearch
-          uri: lb://EGOVSEARCH
+          uri: ${service.uri.search}  # 변수 사용
           predicates:
             - Path=/ext/ops/**
           filters:
@@ -279,3 +279,50 @@ resilience4j:
         baseConfig: default
       boardCircuitBreaker:
         baseConfig: default
+
+---
+spring:
+  config:
+    activate:
+      on-profile: "local,docker"  # local과 docker 프로파일에 모두 적용
+
+service:
+  uri:
+    main: lb://EGOVMAIN
+    login: lb://EGOVLOGIN
+    author: lb://EGOVAUTHOR
+    board: lb://EGOVBOARD
+    mobileid: lb://EGOVMOBILEID
+    questionnaire: lb://EGOVQUESTIONNAIRE
+    cmmncode: lb://EGOVCMMNCODE
+    search: lb://EGOVSEARCH
+
+---
+spring:
+  config:
+    activate:
+      on-profile: k8s
+    import: 'optional:configserver:'
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+
+eureka:
+  client:
+    enabled: false
+
+server:
+  port: 80
+
+service:
+  uri:
+    main: http://egov-main.egov-app.svc.cluster.local
+    login: http://egov-login.egov-app.svc.cluster.local
+    author: http://egov-author.egov-app.svc.cluster.local
+    board: http://egov-board.egov-app.svc.cluster.local
+    mobileid: http://egov-mobileid.egov-app.svc.cluster.local
+    questionnaire: http://egov-questionnaire.egov-app.svc.cluster.local
+    cmmncode: http://egov-cmmncode.egov-app.svc.cluster.local
+    search: http://egov-search.egov-app.svc.cluster.local

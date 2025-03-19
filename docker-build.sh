@@ -27,6 +27,7 @@ services=(
 
 # 이미지 태그 정의
 IMAGE_TAG="latest"
+K8S_TAG="k8s"
 
 # 결과 저장을 위한 임시 파일
 RESULT_FILE="/tmp/build_results.txt"
@@ -35,6 +36,7 @@ RESULT_FILE="/tmp/build_results.txt"
 # 빌드 함수
 build_service() {
     local service=$1
+    local build_type=$2
     echo -e "\n${BLUE}Building ${service}...${NC}"
     
     # 디렉토리 존재 확인
@@ -57,7 +59,23 @@ build_service() {
     # Docker 이미지 빌드
     echo -e "${YELLOW}Building Docker image for $service...${NC}"
     image_name=$(echo $service | tr '[:upper:]' '[:lower:]')
-    if ! docker build -t $image_name:$IMAGE_TAG .; then
+    
+    # k8s 빌드인 경우
+    if [ "$build_type" == "k8s" ]; then
+        tag=$K8S_TAG
+        dockerfile="Dockerfile.k8s"
+        if [ ! -f "$dockerfile" ]; then
+            echo -e "${RED}Error: $dockerfile not found${NC}"
+            cd ..
+            echo "${service}:Failed: $dockerfile not found" >> $RESULT_FILE
+            return 1
+        fi
+    else
+        tag=$IMAGE_TAG
+        dockerfile="Dockerfile"
+    fi
+
+    if ! docker build -f $dockerfile -t $image_name:$tag .; then
         echo -e "${RED}Docker build failed for $service${NC}"
         cd ..
         echo "${service}:Failed: Docker build failed" >> $RESULT_FILE
@@ -68,6 +86,17 @@ build_service() {
     echo "${service}:Success" >> $RESULT_FILE
     echo -e "${GREEN}Successfully built $service${NC}"
     return 0
+}
+
+# 사용법 출력 함수
+print_usage() {
+    echo "Usage: $0 [OPTIONS] [SERVICE_NAME]"
+    echo "Options:"
+    echo "  -k, --k8s    Build images for Kubernetes deployment"
+    echo "  -h, --help   Show this help message"
+    echo ""
+    echo "Available services:"
+    printf '%s\n' "${services[@]}"
 }
 
 # 결과 출력 함수
@@ -89,48 +118,71 @@ print_summary() {
     done < $RESULT_FILE
 }
 
-# Docker 네트워크 생성 (없는 경우)
-echo -e "${YELLOW}Checking Docker network...${NC}"
-if ! docker network ls | grep -q "egov-msa-com-network"; then
-    echo -e "${YELLOW}Creating egov-msa-com-network...${NC}"
-    docker network create egov-msa-com-network
+# 명령행 인자 파싱
+BUILD_TYPE="default"
+SERVICE_NAME=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -k|--k8s)
+            BUILD_TYPE="k8s"
+            shift
+            ;;
+        -h|--help)
+            print_usage
+            exit 0
+            ;;
+        *)
+            SERVICE_NAME="$1"
+            shift
+            ;;
+    esac
+done
+
+# Docker 네트워크 생성 (k8s 빌드가 아닌 경우에만)
+if [ "$BUILD_TYPE" != "k8s" ]; then
+    echo -e "${YELLOW}Checking Docker network...${NC}"
+    if ! docker network ls | grep -q "egov-msa-com-network"; then
+        echo -e "${YELLOW}Creating egov-msa-com-network...${NC}"
+        docker network create egov-msa-com-network
+    fi
 fi
 
-# 인자 확인 및 유효성 검사
-if [ $# -eq 1 ]; then
-    # 서비스 이름이 유효한지 확인
+# 서비스 빌드 로직
+if [ -n "$SERVICE_NAME" ]; then
+    # 단일 서비스 빌드
     valid_service=false
     for service in "${services[@]}"; do
-        if [ "$1" == "$service" ]; then
+        if [ "$SERVICE_NAME" == "$service" ]; then
             valid_service=true
             break
         fi
     done
 
     if [ "$valid_service" = true ]; then
-        echo -e "${BLUE}Starting build process for $1...${NC}"
-        build_service "$1"
+        echo -e "${BLUE}Starting build process for $SERVICE_NAME (Type: $BUILD_TYPE)...${NC}"
+        build_service "$SERVICE_NAME" "$BUILD_TYPE"
     else
-        echo -e "${RED}Error: Invalid service name '$1'${NC}"
+        echo -e "${RED}Error: Invalid service name '$SERVICE_NAME'${NC}"
         echo "Available services:"
         printf '%s\n' "${services[@]}"
         rm -f $RESULT_FILE
         exit 1
     fi
 else
-    # 인자가 없는 경우 모든 서비스 빌드
-    echo -e "${BLUE}Starting build process for all services...${NC}"
+    # 모든 서비스 빌드
+    echo -e "${BLUE}Starting build process for all services (Type: $BUILD_TYPE)...${NC}"
     echo -e "Services to build: ${services[@]}\n"
 
     for service in "${services[@]}"; do
-        build_service "$service"
+        build_service "$service" "$BUILD_TYPE"
     done
 fi
 
 # 빌드 결과 출력
 print_summary
 
-# 최종 상태 확인
+# 최종 상태 확인 및 결과 출력
 FAILED=0
 while IFS=: read -r service status; do
     if [ "$status" != "Success" ]; then
@@ -148,4 +200,8 @@ if [ $FAILED -eq 1 ]; then
 fi
 
 echo -e "\n${GREEN}All services built successfully!${NC}"
-echo -e "You can now use 'docker-compose up' to start the services."
+if [ "$BUILD_TYPE" != "k8s" ]; then
+    echo -e "You can now use 'docker-compose up' to start the services."
+else
+    echo -e "Kubernetes deployment images are ready."
+fi

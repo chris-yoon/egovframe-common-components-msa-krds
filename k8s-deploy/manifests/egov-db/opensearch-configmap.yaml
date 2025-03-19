@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opensearch-config
+  namespace: egov-db
+data:
+  opensearch.yml: |
+    cluster.name: opensearch-cluster
+    discovery.seed_hosts: ["opensearch-node1", "opensearch-node2"]
+    cluster.initial_cluster_manager_nodes: ["opensearch-node1", "opensearch-node2"]
+    bootstrap.memory_lock: true
+    network.host: 0.0.0.0
+    plugins.security.ssl.http.enabled: true
+    plugins.security.allow_unsafe_democertificates: true
+    plugins.security.allow_default_init_securityindex: true
