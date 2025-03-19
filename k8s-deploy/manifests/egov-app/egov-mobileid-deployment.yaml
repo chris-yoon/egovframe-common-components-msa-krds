@@ -67,6 +67,8 @@ spec:
             configMapKeyRef:
               name: egov-common-config
               key: ROLES_ROLE_USER
+        - name: APP_VERIFY_FILE_PATH
+          value: "/app/config/verifyConfig-docker.json"
         livenessProbe:
           httpGet:
             path: /actuator/health
@@ -83,8 +85,8 @@ spec:
           timeoutSeconds: 3
       volumes:
       - name: config-volume
-        configMap:
-          name: mobileid-config
+        persistentVolumeClaim:
+          claimName: egov-mobileid-pvc  # PVC 사용
 ---
 apiVersion: v1
 kind: Service

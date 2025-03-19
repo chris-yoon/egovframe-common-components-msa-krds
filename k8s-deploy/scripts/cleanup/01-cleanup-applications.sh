@@ -34,6 +34,23 @@ kubectl delete configmap -n egov-app --all
 echo -e "${GREEN}Removing MySQL Secret in egov-app namespace...${NC}"
 kubectl delete secret mysql-secret -n egov-app 2>/dev/null || true
 
+# MobileId PV/PVC 제거
+echo -e "${GREEN}Removing MobileId PV and PVC...${NC}"
+kubectl delete -f "../../manifests/egov-app/egov-mobileid-pv.yaml" 2>/dev/null || true
+
+# PVC가 Terminating 상태인 경우 강제 삭제
+if kubectl get pvc egov-mobileid-pvc -n egov-app 2>/dev/null | grep Terminating; then
+    echo -e "${YELLOW}PVC stuck in Terminating state, forcing deletion...${NC}"
+    kubectl delete pvc egov-mobileid-pvc -n egov-app --force --grace-period=0
+fi
+
+# PV가 Terminating 상태인 경우 강제 삭제
+if kubectl get pv egov-mobileid-pv 2>/dev/null | grep Terminating; then
+    echo -e "${YELLOW}PV stuck in Terminating state, forcing deletion...${NC}"
+    kubectl patch pv egov-mobileid-pv -p '{"metadata":{"finalizers":null}}'
+    kubectl delete pv egov-mobileid-pv --force --grace-period=0
+fi
+
 # 리소스 제거 완료 대기
 echo -e "\n${YELLOW}Waiting for resources to be terminated...${NC}"
 echo -e "${YELLOW}Waiting for egov-app resources...${NC}"
@@ -46,5 +63,12 @@ kubectl get all -n egov-app
 # ConfigMap 상태 확인
 echo -e "\n${YELLOW}Checking remaining ConfigMaps in egov-app:${NC}"
 kubectl get configmap -n egov-app
+
+# PV/PVC 상태 확인
+echo -e "\n${YELLOW}Checking remaining PV/PVC:${NC}"
+echo -e "${GREEN}PVCs in egov-app namespace:${NC}"
+kubectl get pvc -n egov-app
+echo -e "\n${GREEN}PVs:${NC}"
+kubectl get pv | grep egov-mobileid
 
 echo -e "\n${GREEN}Application cleanup completed!${NC}"
