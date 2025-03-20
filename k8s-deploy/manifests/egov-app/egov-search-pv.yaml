@@ -1,0 +1,119 @@
+# Config PV/PVC
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: egov-search-config-pv
+  namespace: egov-app
+spec:
+  capacity:
+    storage: 1Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/EgovSearch-config/config"
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: egov-search-config-pvc
+  namespace: egov-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Mi
+  storageClassName: standard
+---
+# Model PV/PVC
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: egov-search-model-pv
+  namespace: egov-app
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/EgovSearch-config/model"
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: egov-search-model-pvc
+  namespace: egov-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard
+---
+# Example PV/PVC
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: egov-search-example-pv
+  namespace: egov-app
+spec:
+  capacity:
+    storage: 1Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/EgovSearch-config/example"
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: egov-search-example-pvc
+  namespace: egov-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Mi
+  storageClassName: standard
+---
+# Cacerts PV/PVC
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: egov-search-cacerts-pv
+  namespace: egov-app
+spec:
+  capacity:
+    storage: 1Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/EgovSearch-config/cacerts"
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: egov-search-cacerts-pvc
+  namespace: egov-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Mi
+  storageClassName: standard

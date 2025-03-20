@@ -29,6 +29,10 @@ kubectl apply -f "../../manifests/egov-app/egov-common-configmap.yaml"
 echo -e "${GREEN}Creating MobileId PV and PVC...${NC}"
 kubectl apply -f "../../manifests/egov-app/egov-mobileid-pv.yaml"
 
+# EgovSearch PV/PVC 생성
+echo -e "${GREEN}Creating EgovSearch PV and PVC...${NC}"
+kubectl apply -f "../../manifests/egov-app/egov-search-pv.yaml"
+
 # 각 서비스 배포
 SERVICES=(
     "egov-main"
@@ -52,10 +56,16 @@ echo -e "\n${YELLOW}Checking application services status:${NC}"
 kubectl get pods,svc -n egov-app
 
 # PV/PVC 상태 확인
-echo -e "\n${YELLOW}Checking MobileId PV/PVC status:${NC}"
+echo -e "\n${YELLOW}Checking EgovMobileId PV/PVC status:${NC}"
 echo -e "${GREEN}PVCs in egov-app namespace:${NC}"
 kubectl get pvc -n egov-app | grep mobileid
 echo -e "\n${GREEN}PVs:${NC}"
 kubectl get pv | grep mobileid
+
+echo -e "\n${YELLOW}Checking EgovSearch PV/PVC status:${NC}"
+echo -e "${GREEN}PVCs in egov-app namespace:${NC}"
+kubectl get pvc -n egov-app | grep search
+echo -e "\n${GREEN}PVs:${NC}"
+kubectl get pv | grep search
 
 echo -e "\n${GREEN}Application services installation completed successfully!${NC}"

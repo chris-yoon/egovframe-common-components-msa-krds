@@ -23,8 +23,6 @@ spec:
             name: egov-common-config
         - secretRef:
             name: mysql-secret
-        - secretRef:
-            name: opensearch-secret
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "k8s"
@@ -37,7 +35,7 @@ spec:
         - name: EUREKA_CLIENT_ENABLED
           value: "false"
         - name: APP_SEARCH_CONFIG_PATH
-          value: "/app/config/searchConfig-k8s.json"
+          value: "/app/config/searchConfig-docker.json"
         - name: OPENSEARCH_KEYSTORE_PATH
           value: "/app/cacerts/cacerts"
         - name: OPENSEARCH_KEYSTORE_PASSWORD
@@ -45,13 +43,21 @@ spec:
         - name: OPENSEARCH_PROTOCOL
           value: "https"
         - name: OPENSEARCH_URL
-          value: "opensearch-internal.egov-db.svc.cluster.local"
+          value: "host.docker.internal"  # 네임스페이스를 포함한 전체 서비스 이름
         - name: OPENSEARCH_PORT
           value: "9200"
         - name: LOGGING_LEVEL_EGOVFRAMEWORK_COM_EXT_OPS
           value: "DEBUG"
         - name: LOGGING_LEVEL_ORG_OPENSEARCH
           value: "DEBUG"
+        - name: SPRING_RABBITMQ_HOST
+          value: "rabbitmq.egov-infra.svc.cluster.local"
+        - name: SPRING_RABBITMQ_PORT
+          value: "5672"
+        - name: SPRING_RABBITMQ_USERNAME
+          value: "guest"
+        - name: SPRING_RABBITMQ_PASSWORD
+          value: "guest"
         volumeMounts:
         - name: search-config
           mountPath: /app/config
@@ -79,17 +85,17 @@ spec:
           timeoutSeconds: 3
       volumes:
       - name: search-config
-        configMap:
-          name: search-config
+        persistentVolumeClaim:
+          claimName: egov-search-config-pvc
       - name: search-model
         persistentVolumeClaim:
-          claimName: search-model-pvc
+          claimName: egov-search-model-pvc
       - name: search-cacerts
-        secret:
-          secretName: search-cacerts
+        persistentVolumeClaim:
+          claimName: egov-search-cacerts-pvc
       - name: search-example
         persistentVolumeClaim:
-          claimName: search-example-pvc
+          claimName: egov-search-example-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -100,7 +106,9 @@ spec:
   selector:
     app: egov-search
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: 80
       targetPort: 80
-  type: ClusterIP
+      nodePort: 30992
+  type: NodePort
