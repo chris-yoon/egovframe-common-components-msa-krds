@@ -49,6 +49,13 @@ spring:
           type: rabbit
     function:
       definition: searchConsumer
+  mvc:
+    cors:
+      allowed-origins: http://localhost:30992
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+      allowed-headers: "*"
+      allow-credentials: true
+      max-age: 3600
 
 logging:
   level:
@@ -76,6 +83,12 @@ springdoc:
     tags-sorter: alpha
     operations-sorter: alpha
     doc-expansion: none
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    urls[0]:
+      name: EgovOpenSearchAPI
+      url: /v3/api-docs
+    urls-primary-name: EgovOpenSearchAPI
   api-docs:
     path: /v3/api-docs
     groups:
