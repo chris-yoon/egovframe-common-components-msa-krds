@@ -24,17 +24,20 @@ kubectl delete -f ../../manifests/egov-db/opensearch-configmap.yaml 2>/dev/null 
 
 # OpenSearch PV/PVC 제거
 echo -e "${GREEN}Removing OpenSearch PV and PVC...${NC}"
-kubectl delete pvc data-opensearch-0 -n egov-db --force --grace-period=0 2>/dev/null || true
-kubectl delete pvc data-opensearch-1 -n egov-db --force --grace-period=0 2>/dev/null || true
+kubectl delete -f ../../manifests/egov-db/opensearch-pv.yaml 2>/dev/null || true
+
+# PVC가 Terminating 상태인 경우 강제 삭제
+if kubectl get pvc data-opensearch-0 -n egov-db 2>/dev/null | grep Terminating; then
+    echo -e "${YELLOW}PVC stuck in Terminating state, forcing deletion...${NC}"
+    kubectl delete pvc data-opensearch-0 -n egov-db --force --grace-period=0
+fi
 
 # PV가 Terminating 상태인 경우 강제 삭제
-for pv in $(kubectl get pv | grep opensearch | awk '{print $1}'); do
-    if kubectl get pv $pv 2>/dev/null | grep Terminating; then
-        echo -e "${YELLOW}PV $pv stuck in Terminating state, forcing deletion...${NC}"
-        kubectl patch pv $pv -p '{"metadata":{"finalizers":null}}'
-        kubectl delete pv $pv --force --grace-period=0
-    fi
-done
+if kubectl get pv opensearch-pv-0 2>/dev/null | grep Terminating; then
+    echo -e "${YELLOW}PV stuck in Terminating state, forcing deletion...${NC}"
+    kubectl patch pv opensearch-pv-0 -p '{"metadata":{"finalizers":null}}'
+    kubectl delete pv opensearch-pv-0 --force --grace-period=0
+fi
 
 # 리소스 제거 완료 대기
 echo -e "\n${YELLOW}Waiting for OpenSearch resources to be terminated...${NC}"

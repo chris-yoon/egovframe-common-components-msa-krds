@@ -9,11 +9,17 @@ NC='\033[0m'
 # OpenSearch 설치
 echo -e "${YELLOW}Installing OpenSearch...${NC}"
 
+echo -e "${GREEN}Creating OpenSearch PV and PVC...${NC}"
+kubectl apply -f ../../manifests/egov-db/opensearch-pv.yaml
+
 echo -e "${GREEN}Creating OpenSearch ConfigMap...${NC}"
 kubectl apply -f ../../manifests/egov-db/opensearch-configmap.yaml
 
 echo -e "${GREEN}Creating OpenSearch Secret...${NC}"
 kubectl apply -f ../../manifests/egov-db/opensearch-secret.yaml
+
+echo -e "${GREEN}Creating OpenSearch Certificates Secret...${NC}"
+kubectl apply -f ../../manifests/egov-db/opensearch-certs-secret.yaml
 
 echo -e "${GREEN}Creating OpenSearch StatefulSet and Services...${NC}"
 kubectl apply -f ../../manifests/egov-db/opensearch-service.yaml

@@ -4,7 +4,7 @@ metadata:
   name: opensearch
   namespace: egov-db
 spec:
-  serviceName: opensearch
+  serviceName: opensearch-internal
   replicas: 1
   selector:
     matchLabels:
@@ -15,69 +15,39 @@ spec:
         app: opensearch
     spec:
       initContainers:
-      - name: fix-permissions
+      - name: sysctl
         image: busybox
-        command: ["sh", "-c", "chown -R 1000:1000 /usr/share/opensearch/data"]
-        volumeMounts:
-        - name: data
-          mountPath: /usr/share/opensearch/data
+        command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+        securityContext:
+          privileged: true
       containers:
       - name: opensearch
-        image: opensearchproject/opensearch:2.15.0
+        image: opensearch-with-nori:2.15.0
         env:
-        - name: node.name
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
+        - name: discovery.type
+          value: single-node
         - name: OPENSEARCH_JAVA_OPTS
-          value: "-Xms1024m -Xmx1024m"
-        - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: opensearch-secret
-              key: admin-password
-        ports:
-        - containerPort: 9200
-          name: http
-        - containerPort: 9600
-          name: performance
+          value: "-Xms1g -Xmx1g"
         volumeMounts:
-        - name: data
-          mountPath: /usr/share/opensearch/data
         - name: config
           mountPath: /usr/share/opensearch/config/opensearch.yml
           subPath: opensearch.yml
-        resources:
-          requests:
-            memory: "1Gi"
-          limits:
-            memory: "2Gi"
-        securityContext:
-          runAsUser: 1000
-          runAsGroup: 1000
-        readinessProbe:
-          httpGet:
-            path: /_cluster/health
-            port: 9200
-            scheme: HTTPS
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /_cluster/health
-            port: 9200
-            scheme: HTTPS
-          initialDelaySeconds: 60
-          periodSeconds: 20
+        - name: certs
+          mountPath: /usr/share/opensearch/config/certificates
+        - name: data
+          mountPath: /usr/share/opensearch/data
+        ports:
+        - containerPort: 9200
+          name: http
+        - containerPort: 9300
+          name: transport
       volumes:
       - name: config
         configMap:
           name: opensearch-config
-  volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 1Gi
+      - name: certs
+        secret:
+          secretName: opensearch-certs
+      - name: data
+        persistentVolumeClaim:
+          claimName: opensearch-data-0

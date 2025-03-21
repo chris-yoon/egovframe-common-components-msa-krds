@@ -41,11 +41,13 @@ spec:
         - name: OPENSEARCH_KEYSTORE_PASSWORD
           value: "changeit"
         - name: OPENSEARCH_PROTOCOL
-          value: "https"
+          value: "http"  # https에서 http로 변경
         - name: OPENSEARCH_URL
-          value: "host.docker.internal"  # 네임스페이스를 포함한 전체 서비스 이름
+          value: "opensearch-internal.egov-db"  # 내부 서비스 주소 사용
         - name: OPENSEARCH_PORT
           value: "9200"
+        - name: DISABLE_SECURITY
+          value: "true"  # 보안 비활성화 설정 추가
         - name: LOGGING_LEVEL_EGOVFRAMEWORK_COM_EXT_OPS
           value: "DEBUG"
         - name: LOGGING_LEVEL_ORG_OPENSEARCH

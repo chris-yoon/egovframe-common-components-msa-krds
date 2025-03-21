@@ -19,16 +19,22 @@ spec:
         ports:
         - containerPort: 5601
         env:
+        - name: DISABLE_SECURITY_DASHBOARDS_PLUGIN
+          value: "true"
         - name: OPENSEARCH_HOSTS
-          value: '["https://opensearch-internal:9200"]'
+          value: '["http://opensearch-internal:9200"]'
+        - name: OPENSEARCH_SSL_VERIFICATIONMODE
+          value: "none"
         readinessProbe:
           httpGet:
+            scheme: HTTP
             path: /app/home
             port: 5601
           initialDelaySeconds: 30
           periodSeconds: 10
         livenessProbe:
           httpGet:
+            scheme: HTTP
             path: /app/home
             port: 5601
           initialDelaySeconds: 60

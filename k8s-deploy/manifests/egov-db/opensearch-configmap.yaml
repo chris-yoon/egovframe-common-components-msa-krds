@@ -6,10 +6,10 @@ metadata:
 data:
   opensearch.yml: |
     cluster.name: opensearch-cluster
-    discovery.seed_hosts: ["opensearch-node1", "opensearch-node2"]
-    cluster.initial_cluster_manager_nodes: ["opensearch-node1", "opensearch-node2"]
+    node.name: ${HOSTNAME}
+    discovery.type: single-node
     bootstrap.memory_lock: true
     network.host: 0.0.0.0
-    plugins.security.ssl.http.enabled: true
-    plugins.security.allow_unsafe_democertificates: true
-    plugins.security.allow_default_init_securityindex: true
+    
+    # 보안 설정 비활성화
+    plugins.security.disabled: true
