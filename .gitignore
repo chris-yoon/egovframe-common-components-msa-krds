@@ -44,6 +44,7 @@ Thumbs.db
 # k8s-deploy
 k8s-deploy/data/mysql/
 k8s-deploy/data/opensearch/
+k8s-deploy/data/rabbitmq/
 istio-1.25.0/
 
 # Application specific

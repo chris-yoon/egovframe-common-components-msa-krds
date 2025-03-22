@@ -1,18 +1,19 @@
 # Kubernetes 배포 환경 구축
 
+이 프로젝트는 전자정부 표준프레임워크의 공통컴포넌트 26종을 Kubernetes 환경에서 배포하기 위한 가이드입니다.
+
 ## 디렉토리 구조
 
 ```
 k8s-deploy/
-├── README.md
-├── docker-build.sh
-├── bin/                    # 실행 가능한 바이너리 및 도구
+├── README.md              # 가이드 문서
+├── bin/                   # 실행 가능한 바이너리 및 도구 디렉토리
 │   └── istio-1.25.0/       # Istio 설치 용도 디렉토리
-├── data/                   # 영구 데이터 저장소
+├── data/                  # 영구 데이터 저장소 디렉토리
 │   ├── mysql/              # MySQL 데이터 디렉토리
 │   └── opensearch/         # OpenSearch 데이터 디렉토리
 │       └── nodes/          # OpenSearch 노드 데이터 디렉토리
-├── manifests/
+├── manifests/             # Kubernetes 리소스 매니페스트 디렉토리
 │   ├── egov-app/           # 애플리케이션 서비스 매니페스트
 │   │   ├── egov-author-deployment.yaml
 │   │   ├── egov-board-deployment.yaml
@@ -34,22 +35,22 @@ k8s-deploy/
 │       ├── kiali.yaml
 │       └── prometheus.yaml
 └── scripts/
-    ├── setup/              # 설치 스크립트
+    ├── setup/             # 설치 스크립트
     │   ├── 01-setup-istio.sh
     │   ├── 02-setup-namespaces.sh
     │   ├── 03-setup-monitoring.sh
-    │   ├── 04-setup-database.sh
-    │   ├── 05-setup-infrastructure.sh
-    │   └── 06-setup-applications.sh
-    ├── cleanup/            # 정리 스크립트
-    │   ├── 01-cleanup-applications.sh
-    │   ├── 02-cleanup-infrastructure.sh
-    │   ├── 03-cleanup-database.sh
-    │   ├── 04-cleanup-monitoring.sh
-    │   ├── 05-cleanup-namespaces.sh
-    │   └── 06-cleanup-istio.sh
-    ├── setup.sh           # 전체 설치 스크립트
-    └── cleanup.sh         # 전체 정리 스크립트
+    │   ├── 04-setup-mysql.sh
+    │   ├── 05-setup-opensearch.sh
+    │   ├── 06-setup-infrastructure.sh
+    │   └── 07-setup-applications.sh
+    └── cleanup/           # 정리 스크립트
+        ├── 01-cleanup-applications.sh
+        ├── 02-cleanup-infrastructure.sh
+        ├── 03-cleanup-mysql.sh
+        ├── 04-cleanup-opensearch.sh
+        ├── 05-cleanup-monitoring.sh
+        ├── 06-cleanup-namespaces.sh
+        └── 07-cleanup-istio.sh
 ```
 
 ### 디렉토리 설명
@@ -143,14 +144,21 @@ spec:
     path: "/your/local/path/k8s-deploy/data/opensearch"  # 로컬 절대 경로로 수정
 ```
 
-c. EgovMobileId PV 설정 (`k8s-deploy/manifests/egov-app/egov-mobileid-pv.yaml`):
+c. RabbitMQ PV 설정 (`k8s-deploy/manifests/egov-infra/rabbitmq-pv.yaml`):
+```yaml
+spec:
+  hostPath:
+    path: "/your/local/path/k8s-deploy/data/rabbitmq"  # 로컬 절대 경로로 수정
+```
+
+d. EgovMobileId PV 설정 (`k8s-deploy/manifests/egov-app/egov-mobileid-pv.yaml`):
 ```yaml
 spec:
   hostPath:
     path: "/your/local/path/EgovMobileId/config"  # 로컬 절대 경로로 수정
 ```
 
-d. EgovSearch PV 설정 (`k8s-deploy/manifests/egov-app/egov-search-pv.yaml`):
+e. EgovSearch PV 설정 (`k8s-deploy/manifests/egov-app/egov-search-pv.yaml`):
 ```yaml
 # Config PV
 spec:
@@ -182,7 +190,7 @@ cd EgovMain/src/main/resources
 3. 데이터베이스 초기화 확인
 
 
-2. 설치 스크립트 실행
+4. 설치 스크립트 실행
 ```bash
 cd k8s-deploy/scripts/setup
 ./01-setup-istio.sh
@@ -236,6 +244,16 @@ kubectl get svc gateway-server -n egov-infra
 기본 접속 정보:
 - Grafana: admin/admin (초기 접속 시 비밀번호 변경 필요)
 - Kiali: admin/admin (기본값)
+
+3. 애플리케이션 접근 정보 확인
+```bash
+kubectl get svc -n egov-app
+```
+
+4. 애플리케이션 접근 URL
+- EgovMain: http://localhost:9000/main/
+  - 로그인 일반 계정: USER/rhdxhd12
+  - 로그인 업무 계정: TEST1/rhdxhd12
 
 ### 6. 문제 해결
 

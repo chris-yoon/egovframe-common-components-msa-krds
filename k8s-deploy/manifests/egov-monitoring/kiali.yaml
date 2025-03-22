@@ -117,6 +117,10 @@ data:
         enabled: true
       istio:
         root_namespace: egov-monitoring
+      grafana:
+        enabled: true
+        in_cluster_url: "http://grafana.egov-monitoring.svc.cluster.local:3000"
+        url: "http://grafana.egov-monitoring.svc.cluster.local:3000"
       tracing:
         enabled: false
       prometheus:
