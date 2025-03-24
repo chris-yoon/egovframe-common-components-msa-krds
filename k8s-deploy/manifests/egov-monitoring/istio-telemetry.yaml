@@ -1,0 +1,22 @@
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mesh-default
+  namespace: istio-system
+spec:
+  tracing:
+    - randomSamplingPercentage: 100.0
+      providers:
+        - name: "otlp"
+      customTags:
+        environment:
+          literal:
+            value: "production"
+  metrics:
+    - providers:
+        - name: prometheus
+  accessLogging:
+    - providers:
+        - name: otlp
+      filter:
+        expression: "response.code >= 400"  # 400 이상의 응답 코드만 로깅

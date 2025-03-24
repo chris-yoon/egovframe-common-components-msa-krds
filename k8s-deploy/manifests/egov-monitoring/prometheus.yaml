@@ -457,103 +457,88 @@ metadata:
   name: prometheus
   namespace: egov-monitoring
 spec:
+  replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/component: server
       app.kubernetes.io/name: prometheus
       app.kubernetes.io/instance: prometheus
-  replicas: 1
-  revisionHistoryLimit: 10
-  strategy:
-    type: Recreate
-    rollingUpdate: null
   template:
     metadata:
       labels:
-        app.kubernetes.io/component: server
         app.kubernetes.io/name: prometheus
         app.kubernetes.io/instance: prometheus
-        app.kubernetes.io/version: v3.1.0
-        helm.sh/chart: prometheus-26.1.0
-        app.kubernetes.io/part-of: prometheus
-        
         sidecar.istio.io/inject: "false"
     spec:
-      enableServiceLinks: true
       serviceAccountName: prometheus
+      securityContext:
+        fsGroup: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
       containers:
-        - name: prometheus-server-configmap-reload
-          image: "ghcr.io/prometheus-operator/prometheus-config-reloader:v0.78.2"
-          imagePullPolicy: "IfNotPresent"
+        - name: prometheus
+          image: prom/prometheus:v2.45.0
           args:
-            - --watched-dir=/etc/config
-            - --listen-address=0.0.0.0:8080
-            - --reload-url=http://127.0.0.1:9090/-/reload
-          ports:
-            - containerPort: 8080
-              name: metrics
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: metrics
-              scheme: HTTP
-            initialDelaySeconds: 2
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: metrics
-              scheme: HTTP
-            periodSeconds: 10
-          volumeMounts:
-            - name: config-volume
-              mountPath: /etc/config
-              readOnly: true
-
-        - name: prometheus-server
-          image: "prom/prometheus:v3.1.0"
-          imagePullPolicy: "IfNotPresent"
-          args:
-            - --storage.tsdb.retention.time=15d
-            - --config.file=/etc/config/prometheus.yml
-            - --storage.tsdb.path=/data
-            - --web.console.libraries=/etc/prometheus/console_libraries
-            - --web.console.templates=/etc/prometheus/consoles
-            - --web.enable-lifecycle
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--storage.tsdb.retention.time=15d"
+            - "--web.enable-lifecycle"
+            - "--web.enable-admin-api"
+            - "--storage.tsdb.no-lockfile"
+            - "--storage.tsdb.wal-compression"
           ports:
             - containerPort: 9090
+              name: http
           readinessProbe:
             httpGet:
               path: /-/ready
-              port: 9090
-              scheme: HTTP
-            initialDelaySeconds: 0
-            periodSeconds: 5
-            timeoutSeconds: 4
-            failureThreshold: 3
+              port: http
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+            periodSeconds: 15
             successThreshold: 1
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /-/healthy
-              port: 9090
-              scheme: HTTP
+              port: http
             initialDelaySeconds: 30
-            periodSeconds: 15
-            timeoutSeconds: 10
-            failureThreshold: 3
-            successThreshold: 1
+            timeoutSeconds: 30
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+            limits:
+              cpu: "500m"
+              memory: "2Gi"
           volumeMounts:
             - name: config-volume
-              mountPath: /etc/config
+              mountPath: /etc/prometheus
             - name: storage-volume
-              mountPath: /data
-              subPath: ""
-      dnsPolicy: ClusterFirst
-      terminationGracePeriodSeconds: 300
+              mountPath: /prometheus
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
       volumes:
         - name: config-volume
           configMap:
             name: prometheus
         - name: storage-volume
           emptyDir:
-            {}
+            sizeLimit: 10Gi
+      terminationGracePeriodSeconds: 300
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - prometheus
+                topologyKey: kubernetes.io/hostname

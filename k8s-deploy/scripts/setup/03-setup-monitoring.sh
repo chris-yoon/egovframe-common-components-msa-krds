@@ -12,17 +12,69 @@ if ! kubectl get namespace egov-monitoring >/dev/null 2>&1; then
     kubectl create namespace egov-monitoring
 fi
 
-# Istio 애드온 설치
-echo -e "${YELLOW}Installing monitoring addons in egov-monitoring namespace...${NC}"
+# cert-manager 설치 전 기존 설치 제거
+echo -e "${YELLOW}Cleaning up existing cert-manager installation...${NC}"
+kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml --ignore-not-found
+sleep 30
 
-# Prometheus 서비스 먼저 제거 (이미 존재하는 경우)
-kubectl delete service prometheus -n egov-monitoring 2>/dev/null || true
+# cert-manager webhook configuration 임시 비활성화
+echo -e "${YELLOW}Temporarily disabling cert-manager webhook...${NC}"
+kubectl delete validatingwebhookconfiguration cert-manager-webhook --ignore-not-found
+kubectl delete mutatingwebhookconfiguration cert-manager-webhook --ignore-not-found
+sleep 10
 
-# 각 애드온 설치
-for addon in prometheus grafana kiali jaeger; do
+# cert-manager 설치
+echo -e "${YELLOW}Installing cert-manager...${NC}"
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+
+# cert-manager가 준비될 때까지 충분히 대기
+echo -e "${YELLOW}Waiting for cert-manager pods to be ready...${NC}"
+kubectl wait --for=condition=Ready pods -l app=cert-manager -n cert-manager --timeout=300s
+kubectl wait --for=condition=Ready pods -l app=cainjector -n cert-manager --timeout=300s
+kubectl wait --for=condition=Ready pods -l app=webhook -n cert-manager --timeout=300s
+
+echo -e "${YELLOW}Waiting for cert-manager webhook to be fully ready...${NC}"
+sleep 90
+
+# OpenTelemetry Operator 설치 전 기존 설치 제거
+echo -e "${YELLOW}Cleaning up existing OpenTelemetry Operator...${NC}"
+kubectl delete -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml --ignore-not-found
+sleep 30
+
+# OpenTelemetry Operator 설치
+echo -e "${YELLOW}Installing OpenTelemetry Operator...${NC}"
+kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
+
+# OpenTelemetry Operator가 준비될 때까지 대기
+echo -e "${YELLOW}Waiting for OpenTelemetry Operator to be ready...${NC}"
+kubectl wait --for=condition=Ready pods -l control-plane=controller-manager -n opentelemetry-operator-system --timeout=300s
+
+# CRD 설치 확인
+echo -e "${YELLOW}Verifying OpenTelemetry CRDs...${NC}"
+if ! kubectl get crd opentelemetrycollectors.opentelemetry.io >/dev/null 2>&1; then
+    echo -e "${RED}OpenTelemetry CRDs not found. Installation may have failed.${NC}"
+    exit 1
+fi
+
+# 모니터링 컴포넌트 설치
+echo -e "${YELLOW}Installing monitoring components...${NC}"
+for addon in prometheus grafana kiali jaeger loki; do
     echo -e "${GREEN}Installing ${addon}...${NC}"
     kubectl apply -f "../../manifests/egov-monitoring/${addon}.yaml"
+    sleep 5
 done
+
+# OpenTelemetry Collector 설치
+echo -e "${YELLOW}Installing OpenTelemetry Collector...${NC}"
+kubectl apply -f "../../manifests/egov-monitoring/opentelemetry-collector.yaml"
+
+# Collector Pod 준비 대기
+echo -e "${YELLOW}Waiting for OpenTelemetry Collector to be ready...${NC}"
+kubectl wait --for=condition=Ready pods -l app.kubernetes.io/name=otel-collector-collector -n egov-monitoring --timeout=300s
+
+# Pod 상태 확인
+echo -e "${YELLOW}Checking OpenTelemetry Collector pod status...${NC}"
+kubectl get pods -n egov-monitoring -l app.kubernetes.io/name=otel-collector-collector -o wide
 
 # 설치 완료까지 대기
 echo -e "${YELLOW}Waiting for pods to be ready...${NC}"
@@ -44,3 +96,4 @@ echo "Kiali:      http://localhost:30001"
 echo "Grafana:    http://localhost:30002"
 echo "Jaeger:     http://localhost:30003"
 echo "Prometheus: http://localhost:30004"
+

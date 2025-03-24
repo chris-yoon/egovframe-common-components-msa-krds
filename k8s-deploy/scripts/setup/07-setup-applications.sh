@@ -8,10 +8,29 @@ NC='\033[0m'
 
 # 함수: 배포 상태 확인
 check_deployment() {
-    local ns=$1
-    local deploy=$2
-    echo -e "${YELLOW}Waiting for deployment ${deploy} in namespace ${ns}...${NC}"
-    kubectl wait --for=condition=Available deployment/${deploy} -n ${ns} --timeout=30s
+    local namespace=$1
+    local deployment=$2
+    local timeout=600  # 10분으로 증가
+    local interval=30
+    local elapsed=0
+
+    echo -e "${YELLOW}Waiting for deployment ${deployment} in namespace ${namespace}...${NC}"
+    
+    while [ $elapsed -lt $timeout ]; do
+        if kubectl get deployment -n $namespace $deployment -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' | grep -q "True"; then
+            echo -e "${GREEN}Deployment ${deployment} is ready${NC}"
+            return 0
+        fi
+        echo -e "${YELLOW}Still waiting for ${deployment} (${elapsed}s/${timeout}s)...${NC}"
+        sleep $interval
+        elapsed=$((elapsed + interval))
+    done
+
+    echo -e "${RED}Timeout waiting for deployment ${deployment}${NC}"
+    echo -e "${YELLOW}Checking pod status:${NC}"
+    kubectl get pods -n $namespace -l app=$deployment
+    kubectl describe deployment -n $namespace $deployment
+    return 1
 }
 
 # Application 서비스 설치 (egov-app 네임스페이스)

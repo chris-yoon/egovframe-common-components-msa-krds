@@ -16,6 +16,15 @@ kubectl delete -f ../../manifests/egov-monitoring/kiali.yaml 2>/dev/null
 kubectl delete -f ../../manifests/egov-monitoring/prometheus.yaml 2>/dev/null
 kubectl delete -f ../../manifests/egov-monitoring/grafana.yaml 2>/dev/null
 kubectl delete -f ../../manifests/egov-monitoring/jaeger.yaml 2>/dev/null
+kubectl delete -f ../../manifests/egov-monitoring/opentelemetry-collector.yaml 2>/dev/null
+
+# OpenTelemetry Operator 제거
+echo -e "${YELLOW}Removing OpenTelemetry Operator...${NC}"
+kubectl delete -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml 2>/dev/null
+
+# cert-manager 제거
+echo -e "${YELLOW}Removing cert-manager...${NC}"
+kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
 
 # 2. 추가적인 리소스 정리
 echo -e "${YELLOW}Cleaning up remaining resources...${NC}"

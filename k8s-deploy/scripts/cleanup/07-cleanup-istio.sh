@@ -20,10 +20,19 @@ kubectl delete namespace istio-system --ignore-not-found=true
 #kubectl delete namespace istio-operator --ignore-not-found=true
 
 # Istio 바이너리 제거 (선택사항)
-ISTIO_DIR="../../bin/istio-1.25.0"
-if [ -d "$ISTIO_DIR" ]; then
-    echo -e "${YELLOW}Removing Istio binary...${NC}"
-    rm -rf "$ISTIO_DIR"
-fi
+# ISTIO_DIR="../../bin/istio-1.25.0"
+# if [ -d "$ISTIO_DIR" ]; then
+#     read -p "$(echo -e "${YELLOW}Do you want to remove Istio binary? (y/N): ${NC}")" choice
+#     case "$choice" in 
+#         y|Y )
+#             echo -e "${YELLOW}Removing Istio binary...${NC}"
+#             rm -rf "$ISTIO_DIR"
+#             echo -e "${GREEN}Istio binary removed${NC}"
+#             ;;
+#         * )
+#             echo -e "${GREEN}Keeping Istio binary${NC}"
+#             ;;
+#     esac
+# fi
 
 echo -e "${GREEN}Istio cleanup completed!${NC}"
