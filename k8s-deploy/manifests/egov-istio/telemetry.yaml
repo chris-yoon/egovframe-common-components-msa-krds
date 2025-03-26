@@ -13,8 +13,16 @@ spec:
         - name: "zipkin"
       customTags:
         environment:
+          environment:
+            name: SPRING_PROFILES_ACTIVE
+            defaultValue: "unknown"
+        cluster:
           literal:
-            value: "production"
+            value: "egov-cluster"
+        version:
+          header:
+            name: x-version
+            defaultValue: "unknown"
   metrics:
     - providers:
         - name: prometheus
