@@ -9,6 +9,12 @@ spec:
       - name: otel-loki
   tracing:
     - randomSamplingPercentage: 100.0
+      providers:
+        - name: "zipkin"
+      customTags:
+        environment:
+          literal:
+            value: "production"
   metrics:
     - providers:
         - name: prometheus

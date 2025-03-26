@@ -54,12 +54,12 @@ spec:
         operators:
           - type: json_parser
             parse_to: attributes
-          - type: add_attributes
-            attributes:
-              log.container.name: EXPR(attributes["container.name"])
-              service.name: EXPR(attributes["spring.application.name"])
-              k8s.namespace.name: EXPR(attributes["k8s.namespace.name"])
-              k8s.pod.name: EXPR(attributes["k8s.pod.name"])
+          - type: move
+            from: attributes["spring.application.name"]
+            to: attributes["service.name"]
+          - type: move
+            from: attributes["container.name"]
+            to: attributes["log.container.name"]
     processors:
       batch:
         timeout: 10s
@@ -81,14 +81,6 @@ spec:
         endpoint: http://loki.egov-monitoring:3100/loki/api/v1/push
         tls:
           insecure: true
-        labels:
-          resource:
-            service.name: service_name
-            k8s.namespace.name: namespace
-            k8s.pod.name: pod
-          attributes:
-            level: level
-            logger: logger
     service:
       pipelines:
         logs:

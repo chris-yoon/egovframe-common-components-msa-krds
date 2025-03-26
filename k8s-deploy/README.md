@@ -15,62 +15,82 @@ k8s-deploy/
 │       └── nodes/          # OpenSearch 노드 데이터 디렉토리
 ├── manifests/             # Kubernetes 리소스 매니페스트 디렉토리
 │   ├── egov-app/           # 애플리케이션 서비스 매니페스트
-│   │   ├── egov-author-deployment.yaml
-│   │   ├── egov-board-deployment.yaml
-│   │   ├── egov-cmmncode-deployment.yaml
-│   │   ├── egov-login-deployment.yaml
-│   │   ├── egov-main-deployment.yaml
-│   │   ├── egov-mobileid-deployment.yaml
-│   │   ├── egov-questionnaire-deployment.yaml
-│   │   └── egov-search-deployment.yaml
+│   │   ├── egov-author-deployment.yaml       # EgovAuthor 배포 파일
+│   │   ├── egov-board-deployment.yaml       # EgovBoard 배포 파일
+│   │   ├── egov-cmmncode-deployment.yaml    # EgovCmmnCode 배포 파일
+│   │   ├── egov-common-configmap.yaml       # 공통 환경 변수 설정 파일
+│   │   ├── egov-login-deployment.yaml       # EgovLogin 배포 파일
+│   │   ├── egov-main-deployment.yaml        # EgovMain 배포 파일
+│   │   ├── egov-mobileid-pv.yaml            # EgovMobileId PV 설정 파일
+│   │   ├── egov-questionnaire-deployment.yaml  # EgovQuestionnaire 배포 파일
+│   │   ├── egov-search-pv.yaml              # EgovSearch PV 설정 파일
+│   │   └── egov-search-deployment.yaml      # EgovSearch 배포 파일
 │   ├── egov-db/            # 데이터베이스 관련 매니페스트
-│   │   ├── mysql-statefulset.yaml
-│   │   └── opensearch-statefulset.yaml
+│   │   ├── mysql-pv.yaml                  # MySQL PV 설정 파일
+│   │   ├── mysql-secret.yaml              # MySQL 비밀번호 설정 파일
+│   │   ├── mysql-statefulset.yaml         # MySQL StatefulSet 설정 파일
+│   │   ├── mysql-service.yaml             # MySQL 서비스 설정 파일
+│   │   ├── opensearch-service.yaml        # OpenSearch 서비스 설정 파일
+│   │   └── opensearch-statefulset.yaml   # OpenSearch StatefulSet 설정 파일
 │   ├── egov-infra/         # 인프라 서비스 매니페스트
-│   │   ├── gatewayserver-deployment.yaml
-│   │   └── rabbitmq-deployment.yaml
+│   │   ├── egov-common-configmap.yaml     # 공통 환경 변수 설정 파일
+│   │   ├── gatewayserver-deployment.yaml  # 게이트웨이 서버 배포 파일
+│   │   ├── rabbitmq-service.yaml          # RabbitMQ 서비스 배포 파일
+│   │   ├── rabbitmq-configmap.yaml        # RabbitMQ 환경 변수 설정 파일
+│   │   ├── rabbitmq-pv.yaml               # RabbitMQ PV 설정 파일
+│   │   └── rabbitmq-deployment.yaml       # RabbitMQ 배포 파일
+│   ├── egov-istio/         # Istio 설치 매니페스트
+│   │   ├── config.yaml       # Istio 설정 파일
+│   │   └── telemetry.yaml    # Istio Telemetry 설정 파일
 │   └── egov-monitoring/    # 모니터링 도구 매니페스트
-│       ├── grafana.yaml
-│       ├── jaeger.yaml
-│       ├── kiali.yaml
-│       └── prometheus.yaml
+│       ├── grafana.yaml      # Grafana 설정 파일
+│       ├── jaeger.yaml       # Jaeger 설정 파일
+│       ├── kiali.yaml        # Kiali 설정 파일
+│       ├── loki.yaml         # Loki 설정 파일
+│       ├── prometheus.yaml   # Prometheus 설정 파일
+│       └── opentelemetry-collector.yaml  # OpenTelemetry Collector 설정 파일
 └── scripts/
     ├── setup/             # 설치 스크립트
-    │   ├── 01-setup-istio.sh
-    │   ├── 02-setup-namespaces.sh
-    │   ├── 03-setup-monitoring.sh
-    │   ├── 04-setup-mysql.sh
-    │   ├── 05-setup-opensearch.sh
-    │   ├── 06-setup-infrastructure.sh
-    │   └── 07-setup-applications.sh
+    │   ├── setup.sh          # 전체 설치 스크립트
+    │   ├── 01-setup-istio.sh         # Istio 설치 스크립트
+    │   ├── 02-setup-namespaces.sh    # 네임스페이스 설정 스크립트
+    │   ├── 03-setup-monitoring.sh    # 모니터링 도구 설치 스크립트
+    │   ├── 04-setup-mysql.sh         # MySQL 설치 스크립트
+    │   ├── 05-setup-opensearch.sh    # OpenSearch 설치 스크립트
+    │   ├── 06-setup-infrastructure.sh # 인프라 서비스 설치 스크립트
+    │   └── 07-setup-applications.sh  # 애플리케이션 서비스 배포 스크립트
     └── cleanup/           # 정리 스크립트
-        ├── 01-cleanup-applications.sh
-        ├── 02-cleanup-infrastructure.sh
-        ├── 03-cleanup-mysql.sh
-        ├── 04-cleanup-opensearch.sh
-        ├── 05-cleanup-monitoring.sh
-        ├── 06-cleanup-namespaces.sh
-        └── 07-cleanup-istio.sh
+        ├── cleanup.sh        # 전체 정리 스크립트
+        ├── 01-cleanup-applications.sh    # 애플리케이션 정리 스크립트
+        ├── 02-cleanup-infrastructure.sh  # 인프라 정리 스크립트
+        ├── 03-cleanup-mysql.sh         # MySQL 정리 스크립트
+        ├── 04-cleanup-opensearch.sh    # OpenSearch 정리 스크립트
+        ├── 05-cleanup-monitoring.sh    # 모니터링 도구 정리 스크립트
+        ├── 06-cleanup-namespaces.sh    # 네임스페이스 정리 스크립트
+        └── 07-cleanup-istio.sh         # Istio 정리 스크립트
 ```
 
 ### 디렉토리 설명
 
-- `bin/`: Kubernetes 클러스터 관리에 필요한 실행 파일들이 위치합니다.
+- `bin/`: Kubernetes 클러스터에 istio를 설치하기 위한 Istio 바이너리와 클러스터 관리에 필요한 실행 파일들이 위치합니다.
   - `istioctl`: 서비스 메시 Istio를 관리하기 위한 명령줄 도구
   - `kubectl`: Kubernetes 클러스터를 관리하기 위한 명령줄 도구
 
 - `data/`: 컨테이너의 영구 데이터를 저장하는 디렉토리입니다.
   - `mysql/`: MySQL 데이터베이스의 데이터 파일이 저장됩니다.
   - `opensearch/`: OpenSearch의 데이터와 설정 파일이 저장됩니다.
+    - `nodes/`: OpenSearch 노드의 데이터 파일이 저장됩니다.
+  - `rabbitmq/`: RabbitMQ의 데이터 파일이 저장됩니다.
 
 - `manifests/`: Kubernetes 리소스를 정의하는 YAML 파일들이 위치합니다.
   - `egov-app/`: 전자정부 프레임워크 애플리케이션 배포 정의
   - `egov-db/`: 데이터베이스 관련 배포 정의
   - `egov-infra/`: 인프라 서비스 배포 정의
+  - `egov-istio/`: Istio 설치 매니페스트
   - `egov-monitoring/`: 모니터링 도구 배포 정의
 
-- `scripts/`: 클러스터 설정 및 관리를 위한 스크립트들이 위치합니다.
-  - `setup/`: 각 컴포넌트 설치 스크립트
+- `scripts/`: 설치 및 정리 스크립트들이 위치합니다.
+  - `setup/`: Istio 설치부터 애플리케이션 배포까지의 설치 스크립트
   - `cleanup/`: 리소스 정리 스크립트
 
 ## Kubernetes 배포 가이드
@@ -88,11 +108,15 @@ k8s-deploy/
 ### 2. 프로젝트 빌드
 
 1. 전체 서비스 빌드
+
+- 전체 서비스 (EgovAuthor, EgovBoard, EgovCmmnCode, EgovLogin, EgovMain, EgovMobileId, EgovQuestionnaire, EgovSearch) 빌드 후 각 서비스의 `target` 폴더에 jar 파일이 생성되었는지 확인
 ```bash
 ./build.sh
 ```
 
 2. 특정 서비스만 빌드하는 경우
+
+- 특정 서비스 (EgovMain, EgovBoard) 서비스만 빌드 후 각 서비스의 `target` 폴더에 jar 파일이 생성되었는지 확인
 ```bash
 ./build.sh EgovMain
 ./build.sh EgovBoard
@@ -110,11 +134,19 @@ docker build -t opensearch-with-nori:2.15.0 -f Dockerfile .
 ```
 
 2. 전체 서비스 이미지 빌드 (k8s 태그로 빌드)
+
+- 전체 서비스 (EgovAuthor, EgovBoard, EgovCmmnCode, EgovLogin, EgovMain, EgovMobileId, EgovQuestionnaire, EgovSearch) 이미지 빌드
+- 각 서비스의 `target` 폴더의 jar 파일을 기반으로 이미지 생성
+- 각 서비스의 `Dockerfile.k8s`를 사용하여 `k8s` 태그로 빌드
 ```bash
 ./docker-build.sh -k
 ```
 
 3. 특정 서비스만 빌드하는 경우 (k8s 태그로 빌드)
+
+- 특정 서비스 (EgovMain, EgovBoard) 이미지 빌드
+- 각 서비스의 `target` 폴더의 jar 파일을 기반으로 이미지 생성
+- 각 서비스의 `Dockerfile.k8s`를 사용하여 `k8s` 태그로 빌드
 ```bash
 ./docker-build.sh -k EgovMain
 ./docker-build.sh -k EgovBoard
@@ -202,10 +234,16 @@ cd k8s-deploy/scripts/setup
 ./07-setup-applications.sh
 ```
 
+또는 전체 설치 스크립트 실행
+
+```bash
+./setup.sh
+```
+
 설치 과정:
-- Istio 서비스 메시 설치 (istio-system 네임스페이스)
+- Istio 서비스 메시 설치 (istio-system 네임스페이스, Istio 텔레메트리 설정)
 - Namespace 생성 (egov-infra, egov-app, egov-db, egov-monitoring)
-- 모니터링 도구 설치 (Prometheus, Grafana, Kiali, Jaeger)
+- 모니터링 도구 설치 (Prometheus, Grafana, Kiali, Jaeger, OpenTelemetry Collector)
 - 데이터베이스 설치 (MySQL, OpenSearch, OpenSearch Dashboard)
 - 인프라 서비스 설치 (Gateway, RabbitMQ)
 - 애플리케이션 서비스 배포 (EgovMain, EgovBoard, EgovLogin, EgovAuthor, EgovMobileId, EgovQuestionnaire, EgovCmmnCode, EgovSearch)
@@ -284,6 +322,12 @@ cd k8s-deploy/scripts/cleanup
 ./05-cleanup-monitoring.sh
 ./06-cleanup-namespaces.sh
 ./07-cleanup-istio.sh
+```
+
+또는 전체 정리 스크립트 실행
+
+```bash
+./cleanup.sh
 ```
 
 정리 과정:
