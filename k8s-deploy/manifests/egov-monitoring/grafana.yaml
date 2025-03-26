@@ -50,7 +50,7 @@ data:
       name: Prometheus
       orgId: 1
       type: prometheus
-      url: http://prometheus:9090
+      url: http://prometheus.egov-monitoring.svc.cluster.local:9090
     - access: proxy
       editable: true
       isDefault: false
@@ -59,7 +59,7 @@ data:
       name: Loki
       orgId: 1
       type: loki
-      url: http://loki:3100
+      url: http://loki.egov-monitoring.svc.cluster.local:3100
   dashboardproviders.yaml: |
     apiVersion: 1
     providers:

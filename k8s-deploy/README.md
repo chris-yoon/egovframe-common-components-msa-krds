@@ -292,7 +292,11 @@ cd k8s-deploy/scripts/cleanup
 - Database 정리 (egov-db 네임스페이스)
 - Monitoring 정리 (egov-monitoring 네임스페이스)
 - Namespaces 정리 (egov-infra, egov-app, egov-db, egov-monitoring)
-- Istio 정리 (istio-system 네임스페이스)
+- Istio 정리:
+  - Istio 매니페스트 (egov-istio 디렉토리)
+  - Istio injection 레이블
+  - Istio 컴포넌트
+  - istio-system 네임스페이스
 
 2. 정리 완료 후 확인
 ```bash

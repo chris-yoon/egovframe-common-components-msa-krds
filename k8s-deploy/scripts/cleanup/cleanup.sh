@@ -108,8 +108,22 @@ verify_namespaces_cleanup() {
 # 함수: Istio 정리 확인
 verify_istio_cleanup() {
     echo -e "${YELLOW}Verifying Istio cleanup...${NC}"
+    
+    # Istio 네임스페이스 확인
     if kubectl get namespace istio-system >/dev/null 2>&1; then
         echo -e "${RED}Istio namespace still exists${NC}"
+        return 1
+    fi
+    
+    # Istio injection 레이블 확인
+    if kubectl get namespace egov-app -o yaml | grep -q "istio-injection"; then
+        echo -e "${RED}Istio injection label still exists on egov-app namespace${NC}"
+        return 1
+    fi
+    
+    # Istio 매니페스트 확인
+    if kubectl get telemetry -n egov-app egov-apps-telemetry >/dev/null 2>&1; then
+        echo -e "${RED}Istio telemetry configuration still exists${NC}"
         return 1
     fi
     

@@ -1,3 +1,31 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector-collector
+  namespace: egov-monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes", "nodes/proxy"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector-role-binding
+subjects:
+- kind: ServiceAccount
+  name: otel-collector-collector
+  namespace: egov-monitoring
+roleRef:
+  kind: ClusterRole
+  name: otel-collector-role
+  apiGroup: rbac.authorization.k8s.io
+---
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
@@ -5,7 +33,10 @@ metadata:
   namespace: egov-monitoring
 spec:
   mode: deployment
+  serviceAccount: otel-collector-collector
   image: otel/opentelemetry-collector-contrib:0.96.0
+  podAnnotations:
+    sidecar.istio.io/inject: "false"
   config:
     receivers:
       otlp:
@@ -14,23 +45,21 @@ spec:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
-      prometheus:
-        config:
-          scrape_configs:
-            - job_name: 'istio-proxy'
-              kubernetes_sd_configs:
-                - role: pod
-              relabel_configs:
-                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-                  action: keep
-                  regex: true
-                - source_labels: [__meta_kubernetes_pod_annotation_sidecar_istio_io_status]
-                  action: keep
-                  regex: (.+)
-                - source_labels: [__meta_kubernetes_pod_container_port_name]
-                  action: keep
-                  regex: '.*-envoy-prom'
-
+      filelog:
+        include: [ /var/log/containers/*egov*.log ]
+        exclude: [ /var/log/containers/*istio*.log ]
+        start_at: beginning
+        include_file_path: true
+        include_file_name: true
+        operators:
+          - type: json_parser
+            parse_to: attributes
+          - type: add_attributes
+            attributes:
+              log.container.name: EXPR(attributes["container.name"])
+              service.name: EXPR(attributes["spring.application.name"])
+              k8s.namespace.name: EXPR(attributes["k8s.namespace.name"])
+              k8s.pod.name: EXPR(attributes["k8s.pod.name"])
     processors:
       batch:
         timeout: 10s
@@ -39,36 +68,36 @@ spec:
         check_interval: 5s
         limit_percentage: 80
         spike_limit_percentage: 25
-
+      attributes:
+        actions:
+          - key: service.name
+            from_attribute: app
+            action: insert
+          - key: service.namespace
+            from_attribute: namespace
+            action: insert
     exporters:
-      otlp:
-        endpoint: jaeger-collector.egov-monitoring:4317
-        tls:
-          insecure: true
-      prometheus:
-        endpoint: 0.0.0.0:8889
       loki:
         endpoint: http://loki.egov-monitoring:3100/loki/api/v1/push
-
+        tls:
+          insecure: true
+        labels:
+          resource:
+            service.name: service_name
+            k8s.namespace.name: namespace
+            k8s.pod.name: pod
+          attributes:
+            level: level
+            logger: logger
     service:
       pipelines:
-        traces:
-          receivers: [otlp]
-          processors: [memory_limiter, batch]
-          exporters: [otlp]
-        metrics:
-          receivers: [otlp, prometheus]
-          processors: [memory_limiter, batch]
-          exporters: [prometheus]
         logs:
-          receivers: [otlp]
-          processors: [memory_limiter, batch]
+          receivers: [otlp, filelog]
+          processors: [memory_limiter, batch, attributes]
           exporters: [loki]
-
       telemetry:
         logs:
           level: "debug"
-
 ---
 apiVersion: v1
 kind: Service
@@ -85,5 +114,9 @@ spec:
     port: 4318
     protocol: TCP
     targetPort: 4318
+  - name: prometheus
+    port: 8889
+    protocol: TCP
+    targetPort: 8889
   selector:
-    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/name: otel-collector-collector

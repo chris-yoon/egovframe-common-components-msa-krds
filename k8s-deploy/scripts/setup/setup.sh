@@ -58,11 +58,14 @@ check_error() {
 # 함수: Istio 설치 확인
 check_istio() {
     echo -e "${YELLOW}Verifying Istio installation...${NC}"
+    
+    # 네임스페이스 확인
     if ! kubectl get namespace istio-system >/dev/null 2>&1; then
         echo -e "${RED}Istio namespace not found${NC}"
         return 1
     fi
     
+    # Pod 상태 확인
     if ! kubectl wait --for=condition=Ready pods --all -n istio-system --timeout=300s; then
         echo -e "${RED}Istio pods are not ready${NC}"
         return 1

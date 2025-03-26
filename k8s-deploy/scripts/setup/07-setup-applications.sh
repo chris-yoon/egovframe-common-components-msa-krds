@@ -64,10 +64,20 @@ SERVICES=(
     "egov-search"
 )
 
+# 먼저 모든 서비스 배포
 for service in "${SERVICES[@]}"; do
     echo -e "${GREEN}Installing ${service}...${NC}"
     kubectl apply -f "../../manifests/egov-app/${service}-deployment.yaml"
+done
+
+# 모든 서비스의 배포 상태를 한번에 확인
+echo -e "\n${YELLOW}Checking all service deployments...${NC}"
+for service in "${SERVICES[@]}"; do
     check_deployment "egov-app" "${service}"
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Failed to deploy ${service}${NC}"
+        exit 1
+    fi
 done
 
 # 상태 확인

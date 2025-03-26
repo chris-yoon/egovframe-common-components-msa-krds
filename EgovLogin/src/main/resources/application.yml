@@ -39,6 +39,8 @@ spring:
         format_sql: ${jpa.properties.hibernate.format_sql:true}
 
 logging:
+  pattern:
+    console: '{"timestamp":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%p","service":"${spring.application.name}","trace":"%X{trace_id}","span":"%X{span_id}","thread":"%t","logger":"%logger{63}","message":"%replace(%m){"\n", "\\n"}%n%ex"}'
   level:
     org:
       egovframe:

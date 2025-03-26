@@ -1,0 +1,14 @@
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: egov-apps-telemetry
+  namespace: egov-app
+spec:
+  accessLogging:
+    - providers:
+      - name: otel-loki
+  tracing:
+    - randomSamplingPercentage: 100.0
+  metrics:
+    - providers:
+        - name: prometheus

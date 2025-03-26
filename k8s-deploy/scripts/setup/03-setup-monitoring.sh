@@ -50,7 +50,7 @@ echo -e "${YELLOW}Waiting for OpenTelemetry Operator to be ready...${NC}"
 kubectl wait --for=condition=Ready pods -l control-plane=controller-manager -n opentelemetry-operator-system --timeout=300s
 
 # CRD 설치 확인
-echo -e "${YELLOW}Verifying OpenTelemetry CRDs...${NC}"
+echo -e "${YELLOW}Verifying OpenTelemetry CRDs...${NC}"f
 if ! kubectl get crd opentelemetrycollectors.opentelemetry.io >/dev/null 2>&1; then
     echo -e "${RED}OpenTelemetry CRDs not found. Installation may have failed.${NC}"
     exit 1
@@ -64,9 +64,13 @@ for addon in prometheus grafana kiali jaeger loki; do
     sleep 5
 done
 
-# OpenTelemetry Collector 설치
-echo -e "${YELLOW}Installing OpenTelemetry Collector...${NC}"
+# OpenTelemetry Collector 설정 적용
+echo -e "${YELLOW}Applying OpenTelemetry Collector configuration...${NC}"
 kubectl apply -f "../../manifests/egov-monitoring/opentelemetry-collector.yaml"
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Failed to apply OpenTelemetry Collector configuration${NC}"
+    exit 1
+fi
 
 # Collector Pod 준비 대기
 echo -e "${YELLOW}Waiting for OpenTelemetry Collector to be ready...${NC}"
@@ -88,7 +92,7 @@ kubectl get pods -n egov-monitoring
 echo -e "${GREEN}Checking services:${NC}"
 kubectl get svc -n egov-monitoring
 
-echo -e "${GREEN}Addons installation completed in egov-monitoring namespace!${NC}"
+echo -e "${GREEN}Telemetry configuration completed!${NC}"
 
 # 접근 URL 출력
 echo -e "${YELLOW}Access URLs:${NC}"
