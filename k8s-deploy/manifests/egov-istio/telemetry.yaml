@@ -10,7 +10,7 @@ spec:
   tracing:
     - randomSamplingPercentage: 100.0
       providers:
-        - name: "zipkin"
+        - name: "otel-tracing"
       customTags:
         environment:
           environment:

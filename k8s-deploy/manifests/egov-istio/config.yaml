@@ -11,14 +11,16 @@ data:
       proxyMetadata: {}
       tracing:
         sampling: 100.0
-        zipkin:
-          address: jaeger-collector.egov-monitoring:9411
         custom_tags:
           environment:
             literal:
-              value: "production"
+              value: "egov-cluster"
     enablePrometheusMerge: true
     extensionProviders:
+    - name: otel-tracing
+      opentelemetry:
+        service: otel-collector.egov-monitoring.svc.cluster.local
+        port: 4317
     - name: otel-loki
       envoyOtelAls:
         service: otel-collector.egov-monitoring.svc.cluster.local

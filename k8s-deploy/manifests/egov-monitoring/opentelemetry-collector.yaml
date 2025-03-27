@@ -77,12 +77,20 @@ spec:
             from_attribute: namespace
             action: insert
     exporters:
+      otlp:
+        endpoint: jaeger-collector.egov-monitoring:4317
+        tls:
+          insecure: true
       loki:
         endpoint: http://loki.egov-monitoring:3100/loki/api/v1/push
         tls:
           insecure: true
     service:
       pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch, attributes]
+          exporters: [otlp]
         logs:
           receivers: [otlp, filelog]
           processors: [memory_limiter, batch, attributes]
