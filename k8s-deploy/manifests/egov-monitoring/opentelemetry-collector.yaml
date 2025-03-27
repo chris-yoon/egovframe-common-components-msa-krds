@@ -48,7 +48,7 @@ spec:
       filelog:
         include: [ /var/log/containers/*egov*.log ]
         exclude: [ /var/log/containers/*istio*.log ]
-        start_at: beginning
+        start_at: end
         include_file_path: true
         include_file_name: true
         operators:
@@ -60,6 +60,16 @@ spec:
           - type: move
             from: attributes["container.name"]
             to: attributes["log.container.name"]
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'istio-proxy'
+              kubernetes_sd_configs:
+                - role: pod
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                  action: keep
+                  regex: true
     processors:
       batch:
         timeout: 10s
@@ -78,11 +88,13 @@ spec:
             action: insert
     exporters:
       otlp:
-        endpoint: jaeger-collector.egov-monitoring:4317
+        endpoint: jaeger-collector.egov-monitoring.svc.cluster.local:4317
         tls:
           insecure: true
+      prometheus:
+        endpoint: 0.0.0.0:8889
       loki:
-        endpoint: http://loki.egov-monitoring:3100/loki/api/v1/push
+        endpoint: http://loki.egov-monitoring.svc.cluster.local:3100/loki/api/v1/push
         tls:
           insecure: true
     service:
@@ -91,6 +103,10 @@ spec:
           receivers: [otlp]
           processors: [memory_limiter, batch, attributes]
           exporters: [otlp]
+        metrics:
+          receivers: [prometheus]
+          processors: [memory_limiter, batch]
+          exporters: [prometheus]
         logs:
           receivers: [otlp, filelog]
           processors: [memory_limiter, batch, attributes]
