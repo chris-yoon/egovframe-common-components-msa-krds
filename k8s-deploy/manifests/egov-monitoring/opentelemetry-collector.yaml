@@ -73,12 +73,21 @@ spec:
         operators:
           - type: json_parser
             parse_to: attributes
+            timestamp:
+              parse_from: attributes.time
+              layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+          - type: move
+            from: attributes.log
+            to: body
           - type: move
             from: attributes["spring.application.name"]
             to: attributes["service.name"]
           - type: move
             from: attributes["container.name"]
             to: attributes["log.container.name"]
+          - type: add
+            field: attributes["log.type"]
+            value: "container"
       prometheus:
         config:
           scrape_configs:
@@ -94,13 +103,14 @@ spec:
                   regex: (.*)
                   replacement: $1:15090
                   target_label: __address__
-                - action: labelmap
-                  regex: __meta_kubernetes_pod_label_(.+)
-                - source_labels: [__meta_kubernetes_namespace]
-                  target_label: kubernetes_namespace
-                - source_labels: [__meta_kubernetes_pod_name]
-                  target_label: kubernetes_pod_name
-              metrics_path: /stats/prometheus
+                - action: replace
+                  regex: (.*)
+                  replacement: /stats/prometheus
+                  target_label: __metrics_path__
+              metric_relabel_configs:
+                - source_labels: [__name__]
+                  regex: 'istio_.*'
+                  action: keep
     processors:
       batch:
         timeout: 10s
