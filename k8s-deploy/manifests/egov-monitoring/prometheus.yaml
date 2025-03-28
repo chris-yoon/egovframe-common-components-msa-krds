@@ -49,6 +49,11 @@ data:
       static_configs:
       - targets:
         - otel-collector.egov-monitoring.svc.cluster.local:8889
+      metric_relabel_configs:
+      - action: labeldrop
+        regex: ^container_.*
+      - action: labeldrop
+        regex: ^pod_.*
     - bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
       job_name: kubernetes-apiservers
       kubernetes_sd_configs:
