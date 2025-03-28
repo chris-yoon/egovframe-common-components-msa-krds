@@ -37,6 +37,25 @@ spec:
   image: otel/opentelemetry-collector-contrib:0.96.0
   podAnnotations:
     sidecar.istio.io/inject: "false"
+  volumeMounts:
+    - name: varlogcontainers
+      mountPath: /var/log/containers
+    - name: varlogpods
+      mountPath: /var/log/pods
+    - name: varlibdockercontainers
+      mountPath: /var/lib/docker/containers
+  volumes:
+    - name: varlogcontainers
+      hostPath:
+        path: /var/log/containers
+    - name: varlogpods
+      hostPath:
+        path: /var/log/pods
+    - name: varlibdockercontainers
+      hostPath:
+        path: /var/lib/docker/containers
+  securityContext:
+    privileged: true
   config:
     receivers:
       otlp:
@@ -67,9 +86,21 @@ spec:
               kubernetes_sd_configs:
                 - role: pod
               relabel_configs:
-                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                - source_labels: [__meta_kubernetes_pod_container_name]
                   action: keep
-                  regex: true
+                  regex: "istio-proxy"
+                - source_labels: [__meta_kubernetes_pod_ip]
+                  action: replace
+                  regex: (.*)
+                  replacement: $1:15090
+                  target_label: __address__
+                - action: labelmap
+                  regex: __meta_kubernetes_pod_label_(.+)
+                - source_labels: [__meta_kubernetes_namespace]
+                  target_label: kubernetes_namespace
+                - source_labels: [__meta_kubernetes_pod_name]
+                  target_label: kubernetes_pod_name
+              metrics_path: /stats/prometheus
     processors:
       batch:
         timeout: 10s

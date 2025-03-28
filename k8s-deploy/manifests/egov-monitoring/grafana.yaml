@@ -60,6 +60,16 @@ data:
       orgId: 1
       type: loki
       url: http://loki.egov-monitoring.svc.cluster.local:3100
+    - access: proxy
+      editable: true
+      isDefault: false
+      jsonData:
+        nodeGraph:
+          enabled: true
+      name: Jaeger
+      orgId: 1
+      type: jaeger
+      url: http://tracing.egov-monitoring.svc.cluster.local:80/jaeger
   dashboardproviders.yaml: |
     apiVersion: 1
     providers:
