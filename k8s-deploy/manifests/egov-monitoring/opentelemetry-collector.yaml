@@ -34,7 +34,7 @@ metadata:
 spec:
   mode: deployment
   serviceAccount: otel-collector-collector
-  image: otel/opentelemetry-collector-contrib:0.96.0
+  image: otel/opentelemetry-collector-contrib:0.120.0
   podAnnotations:
     sidecar.istio.io/inject: "false"
   volumeMounts:
@@ -71,20 +71,26 @@ spec:
         include_file_path: true
         include_file_name: true
         operators:
+          # 파일 경로에서 컨테이너 이름 추출
+          - type: regex_parser
+            regex: '^.*containers/(?P<pod_name>[^_]+)_(?P<namespace>[^_]+)_(?P<container>[^-]+)-.*\.log$'
+            parse_from: attributes["log.file.path"]
+            parse_to: attributes.container_info
+          # JSON 파싱
           - type: json_parser
             parse_to: attributes
             timestamp:
               parse_from: attributes.time
               layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+          # 로그 본문 이동
           - type: move
             from: attributes.log
             to: body
+          # 컨테이너 이름 설정
           - type: move
-            from: attributes["spring.application.name"]
-            to: attributes["service.name"]
-          - type: move
-            from: attributes["container.name"]
+            from: attributes.container_info.container
             to: attributes["log.container.name"]
+          # 로그 타입 추가
           - type: add
             field: attributes["log.type"]
             value: "container"
@@ -122,10 +128,16 @@ spec:
       attributes:
         actions:
           - key: service.name
-            from_attribute: app
+            from_attribute: container_info.pod_name
             action: insert
           - key: service.namespace
-            from_attribute: namespace
+            from_attribute: container_info.namespace
+            action: insert
+          - key: container
+            from_attribute: log.container.name
+            action: insert
+          - key: cluster
+            value: "egov"  # 정적 레이블 추가
             action: insert
     exporters:
       otlp:

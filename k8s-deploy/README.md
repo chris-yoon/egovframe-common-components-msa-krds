@@ -59,15 +59,20 @@ k8s-deploy/
     │   ├── 05-setup-opensearch.sh    # OpenSearch 설치 스크립트
     │   ├── 06-setup-infrastructure.sh # 인프라 서비스 설치 스크립트
     │   └── 07-setup-applications.sh  # 애플리케이션 서비스 배포 스크립트
-    └── cleanup/           # 정리 스크립트
-        ├── cleanup.sh        # 전체 정리 스크립트
-        ├── 01-cleanup-applications.sh    # 애플리케이션 정리 스크립트
-        ├── 02-cleanup-infrastructure.sh  # 인프라 정리 스크립트
-        ├── 03-cleanup-mysql.sh         # MySQL 정리 스크립트
-        ├── 04-cleanup-opensearch.sh    # OpenSearch 정리 스크립트
-        ├── 05-cleanup-monitoring.sh    # 모니터링 도구 정리 스크립트
-        ├── 06-cleanup-namespaces.sh    # 네임스페이스 정리 스크립트
-        └── 07-cleanup-istio.sh         # Istio 정리 스크립트
+    ├── cleanup/           # 정리 스크립트
+    │   ├── cleanup.sh        # 전체 정리 스크립트
+    │   ├── 01-cleanup-applications.sh    # 애플리케이션 정리 스크립트
+    │   ├── 02-cleanup-infrastructure.sh  # 인프라 정리 스크립트
+    │   ├── 03-cleanup-mysql.sh         # MySQL 정리 스크립트
+    │   ├── 04-cleanup-opensearch.sh    # OpenSearch 정리 스크립트
+    │   ├── 05-cleanup-monitoring.sh    # 모니터링 도구 정리 스크립트
+    │   ├── 06-cleanup-namespaces.sh    # 네임스페이스 정리 스크립트
+    │   └── 07-cleanup-istio.sh         # Istio 정리 스크립트
+    └── utils/           # 유틸리티 스크립트
+        └── pod/               # Pod 관련 유틸리티 스크립트
+           ├── check-pod.sh      # Pod 상태 확인 스크립트
+           ├── exec-pod.sh       # Pod 내 컨테이너 실행 스크립트
+           └── logs-pod.sh       # Pod 로그 확인 스크립트
 ```
 
 ### 디렉토리 설명
@@ -293,7 +298,143 @@ kubectl get svc -n egov-app
   - 로그인 일반 계정: USER/rhdxhd12
   - 로그인 업무 계정: TEST1/rhdxhd12
 
-### 6. 문제 해결
+### 6. Pod 관리
+
+#### Pod 상태 확인
+
+Pod 상태를 확인하기 위한 스크립트를 제공합니다.
+
+```bash
+./scripts/utils/pod/check-pod.sh [namespace]
+```
+
+사용 가능한 네임스페이스:
+- egov-app
+- egov-db
+- egov-infra
+- egov-monitoring
+- all (모든 네임스페이스 확인)
+
+사용 예시:
+```bash
+# 특정 네임스페이스의 Pod 확인
+./scripts/utils/pod/check-pod.sh egov-app
+./scripts/utils/pod/check-pod.sh egov-monitoring
+
+# 모든 네임스페이스의 Pod 확인
+./scripts/utils/pod/check-pod.sh all
+```
+
+제공하는 정보:
+- Pod 상태 (Running, Ready)
+- 재시작 횟수
+- 리소스 사용량 (CPU, Memory)
+- 문제가 있는 Pod의 이벤트 로그
+- 모니터링 서비스 엔드포인트 정보 (egov-monitoring 네임스페이스)
+
+#### Pod 로그 조회
+
+애플리케이션 로그를 조회하기 위한 스크립트를 제공합니다.
+
+```bash
+./scripts/utils/pod/logs-pod.sh <application-name> [-f|--follow] [-t|--tail <lines>] [-p|--previous]
+```
+
+지원하는 애플리케이션:
+- egov-main
+- egov-board
+- egov-login
+- egov-author
+- egov-mobileid
+- egov-questionnaire
+- egov-cmmncode
+- egov-search
+
+데이터베이스:
+- mysql
+- opensearch
+
+인프라 서비스:
+- gateway-server
+- rabbitmq
+
+모니터링 서비스:
+- prometheus
+- grafana
+- kiali
+- jaeger
+- loki
+- otel-collector
+
+옵션:
+- `-f, --follow`: 실시간으로 로그 출력을 계속 따라감
+- `-t, --tail <lines>`: 마지막 몇 줄을 표시할지 지정 (기본값: 100)
+- `-p, --previous`: 이전 컨테이너 인스턴스의 로그 표시
+
+사용 예시:
+```bash
+# 기본 사용 (마지막 100줄 표시)
+./scripts/utils/pod/logs-pod.sh egov-main
+
+# 실시간 로그 보기
+./scripts/utils/pod/logs-pod.sh egov-board -f
+
+# 마지막 500줄 보기
+./scripts/utils/pod/logs-pod.sh egov-login -t 500
+
+# 이전 컨테이너의 로그 보기
+./scripts/utils/pod/logs-pod.sh egov-search -p
+
+# 모니터링 서비스 로그 보기
+./scripts/utils/pod/logs-pod.sh prometheus
+./scripts/utils/pod/logs-pod.sh grafana -f
+```
+
+#### Pod 명령어 실행
+
+Pod 내에서 명령어를 실행하기 위한 스크립트를 제공합니다.
+
+```bash
+./scripts/utils/pod/exec-pod.sh <application-name> [-c|--container <container-name>]
+```
+
+지원하는 애플리케이션:
+- egov-main
+- egov-board
+- egov-login
+- egov-author
+- egov-mobileid
+- egov-questionnaire
+- egov-cmmncode
+- egov-search
+- mysql
+- opensearch
+- gateway-server
+- rabbitmq
+- prometheus
+- grafana
+- kiali
+- jaeger
+- loki
+- otel-collector
+
+옵션:
+- `-c, --container <container-name>`: 컨테이너 이름 지정 (기본값: Pod의 첫 번째 컨테이너)
+
+사용 예시:
+```bash
+# 기본 사용 (첫 번째 컨테이너에서 명령어 실행)
+./scripts/utils/pod/exec-pod.sh egov-main
+
+# 특정 컨테이너에서 명령어 실행
+./scripts/utils/pod/exec-pod.sh egov-board -c egov-board-container
+
+# 모니터링 서비스에서 명령어 실행
+./scripts/utils/pod/exec-pod.sh prometheus
+./scripts/utils/pod/exec-pod.sh grafana -c grafana-container
+```
+
+#### Pod 문제 해결
 
 1. 파드 상태 확인
 ```bash
@@ -310,80 +451,3 @@ kubectl logs <pod-name> -n <namespace>
 kubectl rollout restart deployment <deployment-name> -n <namespace>
 ```
 
-### 7. 리소스 정리
-
-1. 전체 리소스 정리
-```bash
-cd k8s-deploy/scripts/cleanup
-./01-cleanup-applications.sh
-./02-cleanup-infrastructure.sh
-./03-cleanup-mysql.sh
-./04-cleanup-opensearch.sh
-./05-cleanup-monitoring.sh
-./06-cleanup-namespaces.sh
-./07-cleanup-istio.sh
-```
-
-또는 전체 정리 스크립트 실행
-
-```bash
-./cleanup.sh
-```
-
-정리 과정:
-- Applications 정리 (egov-app 네임스페이스)
-- Infrastructure 정리 (egov-infra 네임스페이스)
-- Database 정리 (egov-db 네임스페이스)
-- Monitoring 정리 (egov-monitoring 네임스페이스)
-- Namespaces 정리 (egov-infra, egov-app, egov-db, egov-monitoring)
-- Istio 정리:
-  - Istio 매니페스트 (egov-istio 디렉토리)
-  - Istio injection 레이블
-  - Istio 컴포넌트
-  - istio-system 네임스페이스
-
-2. 정리 완료 후 확인
-```bash
-# 남아있는 네임스페이스 확인
-kubectl get namespaces
-
-# 남아있는 PV 확인
-kubectl get pv
-
-# 남아있는 PVC 확인
-kubectl get pvc --all-namespaces
-```
-
-3. 특정 네임스페이스만 정리해야 하는 경우
-```bash
-kubectl delete namespace egov-app
-kubectl delete namespace egov-infra
-kubectl delete namespace egov-db
-kubectl delete namespace egov-monitoring
-```
-
-4. 문제 해결
-- PV/PVC가 Terminating 상태에서 멈춘 경우:
-```bash
-# PVC 강제 삭제
-kubectl delete pvc <pvc-name> -n <namespace> --force --grace-period=0
-
-# PV 강제 삭제
-kubectl patch pv <pv-name> -p '{"metadata":{"finalizers":null}}'
-kubectl delete pv <pv-name> --force --grace-period=0
-```
-
-### 8. 주의사항
-
-- 배포 전 도커 이미지가 모두 빌드되어 있는지 확인
-- 네임스페이스별 리소스 할당량 확인
-- 데이터베이스 초기화 스크립트 실행 여부 확인
-- 서비스 간 의존성을 고려한 배포 순서 준수
-
-### 9. 환경별 설정
-
-- 개발 환경: `SPRING_PROFILES_ACTIVE=k8s-dev`
-- 테스트 환경: `SPRING_PROFILES_ACTIVE=k8s-test`
-- 운영 환경: `SPRING_PROFILES_ACTIVE=k8s-prod`
-
-각 환경별 설정은 ConfigMap을 통해 관리됩니다.
