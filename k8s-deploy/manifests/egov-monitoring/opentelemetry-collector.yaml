@@ -32,11 +32,16 @@ metadata:
   name: otel-collector
   namespace: egov-monitoring
 spec:
-  mode: deployment
+  mode: daemonset
   serviceAccount: otel-collector-collector
   image: otel/opentelemetry-collector-contrib:0.120.0
   podAnnotations:
     sidecar.istio.io/inject: "false"
+  env:
+    - name: K8S_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
   volumeMounts:
     - name: varlogcontainers
       mountPath: /var/log/containers
@@ -149,6 +154,9 @@ spec:
           - key: loki.resource.labels
             value:
               - service.name
+            action: insert
+          - key: k8s.node.name  # 노드 정보 추가
+            from_attribute: K8S_NODE_NAME
             action: insert
       resource:
         attributes:

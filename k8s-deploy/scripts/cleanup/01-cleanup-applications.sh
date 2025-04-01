@@ -11,6 +11,7 @@ echo -e "${YELLOW}Removing application services...${NC}"
 
 # 각 서비스 제거
 SERVICES=(
+    "egov-hello"
     "egov-main"
     "egov-board"
     "egov-login"

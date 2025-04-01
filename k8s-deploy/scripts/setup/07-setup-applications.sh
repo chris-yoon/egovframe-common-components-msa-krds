@@ -54,6 +54,7 @@ kubectl apply -f "../../manifests/egov-app/egov-search-pv.yaml"
 
 # 각 서비스 배포
 SERVICES=(
+    "egov-hello"
     "egov-main"
     "egov-board"
     "egov-login"

@@ -18,6 +18,7 @@ services=(
     "EgovAuthor"
     "EgovBoard"
     "EgovCmmnCode"
+    "EgovHello"
     "EgovLogin"
     "EgovMain"
     "EgovMobileId"
