@@ -7,81 +7,87 @@
 - 필요한 도구 설치 확인:
   ```bash
   docker version
-  docker-compose version
+  docker compose version
   ```
 
-## 빌드 전 설정
+## 환경 설정
 
-1. 프로젝트 루트 디렉토리에서 모든 서비스 빌드
-```bash
-./build.sh
+### .env 파일 설정
+프로젝트 루트의 `.env` 파일에서 다음 환경변수들을 설정할 수 있습니다:
+
+```properties
+# Network
+NETWORK_NAME=egov-msa-com-network
+
+# MySQL Configuration
+MYSQL_HOST=mysql-com
+MYSQL_PORT=3306
+MYSQL_DATABASE=com
+MYSQL_USER=com
+MYSQL_PASSWORD=com01
+MYSQL_ROOT_PASSWORD=com01
+
+# Board Service Ports
+EGOV_BOARD_PORT=8082
+EGOV_BOARD_PORT_2=8092
+EGOV_BOARD_PORT_3=8093
+
+# Volume Paths
+EGOVSEARCH_CONFIG_PATH=../EgovSearch-config/config
+EGOVSEARCH_MODEL_PATH=../EgovSearch-config/model
+EGOVSEARCH_CACERTS_PATH=../EgovSearch-config/cacerts
+EGOVSEARCH_EXAMPLE_PATH=../EgovSearch-config/example
+EGOVMOBILEID_CONFIG_PATH=../EgovMobileId/config
 ```
 
-2. 각 서비스의 target 폴더에 jar 파일이 생성되었는지 확인
+## 빌드 및 실행
 
-3. OpenSearch 이미지 빌드 (Nori 플러그인 추가)
+### Make 명령어 사용
 ```bash
-cd EgovSearch/docker-compose/Opensearch
-docker build -t opensearch-with-nori:2.15.0 -f Dockerfile .
+# 전체 서비스 시작
+make start
+
+# 서비스 중지
+make stop
+
+# 게시판 서비스 스케일 아웃
+make scale-out
+
+# 게시판 서비스 스케일 다운
+make scale-down
 ```
 
-## Docker 이미지 빌드
-
-1. 전체 서비스 이미지 빌드
+### Docker Compose 직접 사용
 ```bash
-./docker-build.sh
-```
+# 전체 서비스 시작
+docker compose --env-file .env -f docker-compose.yml up -d
 
-2. 특정 서비스만 빌드
-```bash
-./docker-build.sh EgovMain
-./docker-build.sh EgovBoard
-```
+# 특정 서비스만 시작
+docker compose --env-file .env -f docker-compose.yml up -d egov-main
+docker compose --env-file .env -f docker-compose.yml up -d egov-board
 
-3. 이미지 생성 확인
-```bash
-docker images
-```
+# 게시판 서비스 스케일링
+docker compose --env-file .env -f docker-compose.board-scale.yml up -d
 
-## Docker Compose 실행
-
-1. 전체 서비스 실행
-```bash
-docker-compose up -d
-```
-
-2. 특정 서비스만 실행
-```bash
-docker-compose up -d egov-main
-docker-compose up -d egov-board
-```
-
-3. 서비스 스케일링 (게시판 서비스)
-```bash
-docker-compose -f docker-compose.yml -f docker-compose.board-scale.yml up -d
+# 서비스 중지
+docker compose --env-file .env -f docker-compose.yml -f docker-compose.board-scale.yml down
 ```
 
 ## 서비스 접근
 
 1. 서비스 상태 확인
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 2. 서비스 로그 확인
 ```bash
-docker-compose logs -f [서비스명]
+docker compose logs -f [서비스명]
 ```
 
 3. 접근 URL
-- Gateway Server: http://localhost:9000
-- Config Server: http://localhost:8888
-- 각 서비스 포트:
-  - EgovAuthor: 8081
-  - EgovBoard: 8082
-  - EgovMain: 8085
-  - EgovMobileId: 8086
-  - EgovQuestionnaire: 8087
+- Gateway Server: http://localhost:9000/main/
+- Config Server: http://localhost:8888/application/local
 
 4. 로그인 정보
 - 일반 계정: USER/rhdxhd12
@@ -97,16 +103,6 @@ docker-compose down
 2. 특정 서비스만 중지
 ```bash
 docker-compose stop egov-main
-```
-
-3. 컨테이너 및 이미지 삭제
-```bash
-docker-compose down --rmi all
-```
-
-4. 볼륨 포함 전체 삭제
-```bash
-docker-compose down --rmi all -v
 ```
 
 ## 문제 해결
@@ -129,13 +125,5 @@ docker-compose restart [서비스명]
 4. 네트워크 확인
 ```bash
 docker network ls
-docker network inspect egov-msa-com-network
+docker network inspect egov-msa-com
 ```
-
-## 환경별 설정
-
-- 개발 환경: `SPRING_PROFILES_ACTIVE=docker`
-- 테스트 환경: `SPRING_PROFILES_ACTIVE=docker-test`
-- 운영 환경: `SPRING_PROFILES_ACTIVE=docker-prod`
-
-각 환경별 설정은 Config Server를 통해 관리됩니다.
