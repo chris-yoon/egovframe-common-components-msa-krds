@@ -93,4 +93,4 @@ test-output/
 *.class
 *.log
 hs_err_pid*
-.env
+

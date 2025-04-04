@@ -1,63 +1,64 @@
-name: egov-msa-com
+name: ${NETWORK_NAME}
+
+# 최상위 레벨에서 모든 네트워크 정의
+networks:
+  default:
+    name: ${NETWORK_NAME}
+    external: true
+  opensearch_opensearch-net:
+    external: true
 
 services:
   config-server:
-    image: configserver:latest
+    image: configserver:${IMAGE_TAG}
     container_name: config-server
     ports:
-      - "8888:8888"
+      - "${CONFIG_SERVER_PORT}:${CONFIG_SERVER_PORT}"
     environment:
-      - SPRING_PROFILES_ACTIVE=native
-      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/config-repo
+      - SPRING_PROFILES_ACTIVE=${CONFIG_SERVER_PROFILE}
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:${CONFIG_REPO_PATH}
       - SPRING_RABBITMQ_HOST=bbs_rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - SPRING_RABBITMQ_USERNAME=guest
-      - SPRING_RABBITMQ_PASSWORD=guest
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
     volumes:
-      - ./ConfigServer-config:/config-repo:ro
-    networks:
-      - egov-msa-com-network
+      - ${CONFIG_LOCAL_PATH}:${CONFIG_REPO_PATH}:ro
     depends_on:
       - bbs_rabbitmq
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${CONFIG_SERVER_PORT}/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 40s
 
   eureka-server:
-    image: eurekaserver:latest
+    image: eurekaserver:${IMAGE_TAG}
     container_name: eureka-server
     ports:
-      - "8761:8761"
+      - "${EUREKA_SERVER_PORT}:${EUREKA_SERVER_PORT}"
     environment:
       - SPRING_PROFILES_ACTIVE=default
       # Eureka 설정
-      - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://eureka-server:8761/eureka/
-    networks:
-      - egov-msa-com-network
+      - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://eureka-server:${EUREKA_SERVER_PORT}/eureka/
     depends_on:
       config-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${EUREKA_SERVER_PORT}/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 40s
 
   gateway-server:
-    image: gatewayserver:latest
+    image: gatewayserver:${IMAGE_TAG}
     container_name: gateway-server
     ports:
-      - "9000:9000"
+      - "${GATEWAY_SERVER_PORT}:${GATEWAY_SERVER_PORT}"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-
-    networks:
-      - egov-msa-com-network
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       config-server:
         condition: service_healthy
@@ -65,15 +66,13 @@ services:
         condition: service_healthy
 
   egov-author:
-    image: egovauthor:latest
+    image: egovauthor:${IMAGE_TAG}
     container_name: egov-author
     ports:
       - "8081:8081"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-    networks:
-      - egov-msa-com-network
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       mysql-com:
         condition: service_healthy
@@ -81,15 +80,13 @@ services:
         condition: service_started
 
   egov-board:
-    image: egovboard:latest
+    image: egovboard:${IMAGE_TAG}
     container_name: egov-board
     ports:
       - "8082:8082"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-    networks:
-      - egov-msa-com-network
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       mysql-com:
         condition: service_healthy
@@ -103,14 +100,12 @@ services:
     ports:
       - "3306:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=com
-      - MYSQL_USER=com
-      - MYSQL_PASSWORD=com01
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
-    networks:
-      - egov-msa-com-network
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --lower_case_table_names=1
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -119,15 +114,13 @@ services:
       retries: 5
 
   egov-cmmncode:
-    image: egovcmmncode:latest
+    image: egovcmmncode:${IMAGE_TAG}
     container_name: egov-cmmncode
     ports:
       - "8083:8083"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-    networks:
-      - egov-msa-com-network
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       mysql-com:
         condition: service_healthy
@@ -135,15 +128,13 @@ services:
         condition: service_started
 
   egov-login:
-    image: egovlogin:latest
+    image: egovlogin:${IMAGE_TAG}
     container_name: egov-login
     ports:
       - "8084:8084"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-    networks:
-      - egov-msa-com-network
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       mysql-com:
         condition: service_healthy
@@ -151,15 +142,13 @@ services:
         condition: service_started
 
   egov-main:
-    image: egovmain:latest
+    image: egovmain:${IMAGE_TAG}
     container_name: egov-main
     ports:
       - "8085:8085"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-    networks:
-      - egov-msa-com-network
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       mysql-com:
         condition: service_healthy
@@ -167,49 +156,45 @@ services:
         condition: service_started
 
   egov-mobileid:
-    image: egovmobileid:latest
+    image: egovmobileid:${IMAGE_TAG}
     container_name: egov-mobileid
     ports:
       - "8086:8086"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
       - APP_VERIFY_FILE_PATH=/app/config/verifyConfig-docker.json
     volumes:
-      - ./EgovMobileId/config:/app/config:ro
-    networks:
-      - egov-msa-com-network
+      - ${EGOVMOBILEID_CONFIG_PATH}:/app/config:ro
     depends_on:
       gateway-server:
         condition: service_started
 
   egov-questionnaire:
-    image: egovquestionnaire:latest
+    image: egovquestionnaire:${IMAGE_TAG}
     container_name: egov-questionnaire
     ports:
       - "8087:8087"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-    networks:
-      - egov-msa-com-network
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       - gateway-server
 
   egov-search:
-    image: egovsearch:latest
+    image: egovsearch:${IMAGE_TAG}
     container_name: egov-search
     ports:
       - "9992:9992"  # 포트 수정
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
       - APP_SEARCH_CONFIG_PATH=/app/config/searchConfig-docker.json
       - OPENSEARCH_KEYSTORE_PATH=/app/cacerts/cacerts
       - OPENSEARCH_KEYSTORE_PASSWORD=changeit
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-com:3306/com
-      - SPRING_DATASOURCE_USERNAME=com
-      - SPRING_DATASOURCE_PASSWORD=com01
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-com:3306/${MYSQL_DATABASE}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
       - OPENSEARCH_PROTOCOL=https
       - OPENSEARCH_URL=opensearch-node1  # 컨테이너 이름 수정
       - OPENSEARCH_PORT=9200
@@ -219,12 +204,12 @@ services:
       - LOGGING_LEVEL_EGOVFRAMEWORK_COM_EXT_OPS=DEBUG
       - LOGGING_LEVEL_ORG_OPENSEARCH=DEBUG
     volumes:
-      - ./EgovSearch-config/config:/app/config:ro
-      - ./EgovSearch-config/model:/app/model
-      - ./EgovSearch-config/cacerts:/app/cacerts:ro
-      - ./EgovSearch-config/example:/app/example
+      - ${EGOVSEARCH_CONFIG_PATH}:/app/config:ro
+      - ${EGOVSEARCH_MODEL_PATH}:/app/model
+      - ${EGOVSEARCH_CACERTS_PATH}:/app/cacerts:ro
+      - ${EGOVSEARCH_EXAMPLE_PATH}:/app/example
     networks:
-      - egov-msa-com-network
+      - default
       - opensearch_opensearch-net
     depends_on:
       mysql-com:
@@ -243,8 +228,6 @@ services:
       - RABBITMQ_DEFAULT_PASS=guest
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - egov-msa-com-network
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 30s
@@ -257,9 +240,3 @@ volumes:
   mysql_data:
     name: mysql-com_data
 
-networks:
-  egov-msa-com-network:
-    name: egov-msa-com-network
-    external: true
-  opensearch_opensearch-net:
-    external: true  # OpenSearch docker-compose에서 생성된 네트워크 사용
