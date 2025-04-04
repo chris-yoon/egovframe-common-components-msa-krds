@@ -57,7 +57,7 @@ services:
     ports:
       - "${GATEWAY_SERVER_PORT}:${GATEWAY_SERVER_PORT}"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE_DEFAULT}
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       config-server:
@@ -69,9 +69,9 @@ services:
     image: egovauthor:${IMAGE_TAG}
     container_name: egov-author
     ports:
-      - "8081:8081"
+      - "${EGOV_AUTHOR_PORT}:${EGOV_AUTHOR_PORT}"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE_DEFAULT}
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       mysql-com:
@@ -83,9 +83,9 @@ services:
     image: egovboard:${IMAGE_TAG}
     container_name: egov-board
     ports:
-      - "8082:8082"
+      - "${EGOV_BOARD_PORT}:${EGOV_BOARD_PORT}"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE_DEFAULT}
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       mysql-com:
@@ -117,9 +117,9 @@ services:
     image: egovcmmncode:${IMAGE_TAG}
     container_name: egov-cmmncode
     ports:
-      - "8083:8083"
+      - "${EGOV_CMMNCODE_PORT}:${EGOV_CMMNCODE_PORT}"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE_DEFAULT}
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       mysql-com:
@@ -131,9 +131,9 @@ services:
     image: egovlogin:${IMAGE_TAG}
     container_name: egov-login
     ports:
-      - "8084:8084"
+      - "${EGOV_LOGIN_PORT}:${EGOV_LOGIN_PORT}"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE_DEFAULT}
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       mysql-com:
@@ -145,9 +145,9 @@ services:
     image: egovmain:${IMAGE_TAG}
     container_name: egov-main
     ports:
-      - "8085:8085"
+      - "${EGOV_MAIN_PORT}:${EGOV_MAIN_PORT}"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE_DEFAULT}
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       mysql-com:
@@ -159,9 +159,9 @@ services:
     image: egovmobileid:${IMAGE_TAG}
     container_name: egov-mobileid
     ports:
-      - "8086:8086"
+      - "${EGOV_MOBILEID_PORT}:${EGOV_MOBILEID_PORT}"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE_DEFAULT}
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
       - APP_VERIFY_FILE_PATH=/app/config/verifyConfig-docker.json
     volumes:
@@ -174,9 +174,9 @@ services:
     image: egovquestionnaire:${IMAGE_TAG}
     container_name: egov-questionnaire
     ports:
-      - "8087:8087"
+      - "${EGOV_QUESTIONNAIRE_PORT}:${EGOV_QUESTIONNAIRE_PORT}"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE_DEFAULT}
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
       - gateway-server
@@ -185,9 +185,9 @@ services:
     image: egovsearch:${IMAGE_TAG}
     container_name: egov-search
     ports:
-      - "9992:9992"  # 포트 수정
+      - "${EGOV_SEARCH_PORT}:${EGOV_SEARCH_PORT}"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE_DEFAULT}
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
       - APP_SEARCH_CONFIG_PATH=/app/config/searchConfig-docker.json
       - OPENSEARCH_KEYSTORE_PATH=/app/cacerts/cacerts
