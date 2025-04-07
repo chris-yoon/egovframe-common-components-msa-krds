@@ -31,7 +31,7 @@ stop:
 
 .PHONY: scale-out
 scale-out:
-	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) $(DOCKER_COMPOSE_FILE_SCALE) up --detach
+	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) $(DOCKER_COMPOSE_FILE) $(DOCKER_COMPOSE_FILE_SCALE) up --detach
 
 .PHONY: scale-down
 scale-down:
