@@ -1,14 +1,63 @@
 name: ${NETWORK_NAME}
 
-# 최상위 레벨에서 모든 네트워크 정의
 networks:
   default:
     name: ${NETWORK_NAME}
     external: true
-  opensearch_opensearch-net:
+  opensearch-net:
+    driver: bridge
+
+volumes:
+  opensearch-data1:
     external: true
+  opensearch-data2:
+    external: true
+  rabbitmq_data:
+    external: true
+    name: bbs_rabbitmq_data
+  mysql_data:
+    external: true
+    name: mysql-com_data
 
 services:
+  opensearch-node1:
+    image: opensearch-with-nori:2.15.0
+    container_name: opensearch-node1
+    environment:
+      - discovery.type=single-node
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-egovFrame123!@#}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - opensearch-data1:/usr/share/opensearch/data
+    ports:
+      - "${OPENSEARCH_PORT:-9200}:9200"
+      - "${OPENSEARCH_PERFORMANCE_ANALYZER_PORT:-9600}:9600"
+    networks:
+      - opensearch-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sk https://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.15.0
+    container_name: opensearch-dashboards
+    ports:
+      - "${OPENSEARCH_DASHBOARDS_PORT:-5601}:5601"
+    environment:
+      OPENSEARCH_HOSTS: '["https://opensearch-node1:9200"]'
+    networks:
+      - opensearch-net
+
   config-server:
     image: configserver:${IMAGE_TAG}
     container_name: config-server
@@ -24,7 +73,10 @@ services:
     volumes:
       - ${CONFIG_LOCAL_PATH}:${CONFIG_REPO_PATH}:ro
     depends_on:
-      - bbs_rabbitmq
+      opensearch-node1:
+        condition: service_healthy
+      bbs_rabbitmq:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${CONFIG_SERVER_PORT}/actuator/health"]
       interval: 10s
@@ -42,6 +94,8 @@ services:
       # Eureka 설정
       - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://eureka-server:${EUREKA_SERVER_PORT}/eureka/
     depends_on:
+      opensearch-node1:
+        condition: service_healthy
       config-server:
         condition: service_healthy
     healthcheck:
@@ -60,6 +114,8 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE_DEFAULT}
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
     depends_on:
+      opensearch-node1:
+        condition: service_healthy
       config-server:
         condition: service_healthy
       eureka-server:
@@ -196,11 +252,10 @@ services:
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
       - OPENSEARCH_PROTOCOL=https
-      - OPENSEARCH_URL=opensearch-node1  # 컨테이너 이름 수정
+      - OPENSEARCH_URL=opensearch-node1
       - OPENSEARCH_PORT=9200
       - OPENSEARCH_USERNAME=admin
-      - OPENSEARCH_PASSWORD=egovFrame123!@#
-      # Add these environment variables for better debugging
+      - OPENSEARCH_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-egovFrame123!@#}
       - LOGGING_LEVEL_EGOVFRAMEWORK_COM_EXT_OPS=DEBUG
       - LOGGING_LEVEL_ORG_OPENSEARCH=DEBUG
     volumes:
@@ -210,8 +265,9 @@ services:
       - ${EGOVSEARCH_EXAMPLE_PATH}:/app/example
     networks:
       - default
-      - opensearch_opensearch-net
     depends_on:
+      opensearch-node1:
+        condition: service_healthy
       mysql-com:
         condition: service_healthy
       gateway-server:
@@ -233,10 +289,3 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-
-volumes:
-  rabbitmq_data:
-    name: bbs_rabbitmq_data
-  mysql_data:
-    name: mysql-com_data
-

@@ -10,14 +10,27 @@
   docker compose version
   ```
 
+### OpenSearch 이미지 빌드
+Nori 한글 형태소 분석기가 포함된 OpenSearch 이미지를 빌드해야 합니다:
+```bash
+docker build -t opensearch-with-nori:2.15.0 -f Dockerfile.opensearch .
+```
+
 ## 환경 설정
+
+### OpenSearch 구성
+- 2개의 노드로 구성된 클러스터 (node1, node2)
+- Nori 한글 형태소 분석기 포함
+- 기본 포트:
+  - OpenSearch: 9200 (HTTP), 9600 (Performance Analyzer)
+  - Dashboards: 5601
 
 ### .env 파일 설정
 프로젝트 루트의 `.env` 파일에서 다음 환경변수들을 설정할 수 있습니다:
 
 ```properties
 # Network
-NETWORK_NAME=egov-msa-com-network
+NETWORK_NAME=egov-msa-com
 
 # MySQL Configuration
 MYSQL_HOST=mysql-com

@@ -143,9 +143,9 @@ done
 # Docker 네트워크 생성 (k8s 빌드가 아닌 경우에만)
 if [ "$BUILD_TYPE" != "k8s" ]; then
     echo -e "${YELLOW}Checking Docker network...${NC}"
-    if ! docker network ls | grep -q "egov-msa-com-network"; then
-        echo -e "${YELLOW}Creating egov-msa-com-network...${NC}"
-        docker network create egov-msa-com-network
+    if ! docker network ls | grep -q "egov-msa-com"; then
+        echo -e "${YELLOW}Creating egov-msa-com...${NC}"
+        docker network create egov-msa-com
     fi
 fi
 
