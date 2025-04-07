@@ -10,7 +10,19 @@
   docker compose version
   ```
 
-### OpenSearch 이미지 빌드
+### 프로젝트 빌드
+
+1. 전체 서비스 빌드
+```bash
+./build.sh
+```
+
+2. 도커 이미지 빌드
+```bash
+./docker-build.sh
+```
+
+3. OpenSearch 이미지 빌드
 Nori 한글 형태소 분석기가 포함된 OpenSearch 이미지를 빌드해야 합니다:
 ```bash
 docker build -t opensearch-with-nori:2.15.0 -f Dockerfile.opensearch .
@@ -51,9 +63,13 @@ EGOVSEARCH_MODEL_PATH=../EgovSearch-config/model
 EGOVSEARCH_CACERTS_PATH=../EgovSearch-config/cacerts
 EGOVSEARCH_EXAMPLE_PATH=../EgovSearch-config/example
 EGOVMOBILEID_CONFIG_PATH=../EgovMobileId/config
+
+MYSQL_DATA_PATH=../k8s-deploy/data/mysql
+OPENSEARCH_DATA_PATH=../k8s-deploy/data/opensearch
+RABBITMQ_DATA_PATH=../k8s-deploy/data/rabbitmq
 ```
 
-## 빌드 및 실행
+## 도커 서비스 실행
 
 ### Make 명령어 사용
 ```bash
@@ -88,21 +104,13 @@ docker compose --env-file .env -f docker-compose.yml -f docker-compose.board-sca
 
 ## 서비스 접근
 
-1. 서비스 상태 확인
-```bash
-docker compose ps
-```
-
-2. 서비스 로그 확인
-```bash
-docker compose logs -f [서비스명]
-```
-
-3. 접근 URL
+1. 접근 URL
 - Gateway Server: http://localhost:9000/main/
 - Config Server: http://localhost:8888/application/local
+- Eureka Server: http://localhost:8761
+- OpenSearch Dashboard: http://localhost:5601
 
-4. 로그인 정보
+2. 로그인 정보
 - 일반 계정: USER/rhdxhd12
 - 업무 계정: TEST1/rhdxhd12
 
