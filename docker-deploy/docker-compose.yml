@@ -12,14 +12,20 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: /Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/opensearch
+      device: ${OPENSEARCH_DATA_PATH}
       o: bind
   rabbitmq_data:
-    external: true
-    name: bbs_rabbitmq_data
+    driver: local
+    driver_opts:
+      type: none
+      device: ${RABBITMQ_DATA_PATH}
+      o: bind
   mysql_data:
-    external: true
-    name: mysql-com_data
+    driver: local
+    driver_opts:
+      type: none
+      device: ${MYSQL_DATA_PATH}
+      o: bind
 
 services:
   opensearch:
@@ -29,7 +35,7 @@ services:
       - discovery.type=single-node
       - OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m
       - bootstrap.memory_lock=true
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-egovFrame123!@#}
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
       - plugins.security.ssl.http.enabled=false    # SSL 비활성화
       - plugins.security.ssl.transport.enabled=false
       - plugins.security.disabled=true             # 보안 플러그인 비활성화
@@ -43,12 +49,12 @@ services:
     volumes:
       - opensearch-data1:/usr/share/opensearch/data
     ports:
-      - "${OPENSEARCH_PORT:-9200}:9200"
-      - "${OPENSEARCH_PERFORMANCE_ANALYZER_PORT:-9600}:9600"
+      - "${OPENSEARCH_PORT}:${OPENSEARCH_PORT}"
+      - "${OPENSEARCH_PERFORMANCE_ANALYZER_PORT}:${OPENSEARCH_PERFORMANCE_ANALYZER_PORT}"
     networks:
       - opensearch-net
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:${OPENSEARCH_PORT}/_cluster/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -58,12 +64,12 @@ services:
     image: opensearchproject/opensearch-dashboards:2.15.0
     container_name: opensearch-dashboards
     ports:
-      - "${OPENSEARCH_DASHBOARDS_PORT:-5601}:5601"
+      - "${OPENSEARCH_DASHBOARDS_PORT}:${OPENSEARCH_DASHBOARDS_PORT}"
     expose:
       - '5601'
     environment:
       - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
-      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - OPENSEARCH_HOSTS=["http://opensearch:${OPENSEARCH_PORT}"]
       - OPENSEARCH_SSL_VERIFICATIONMODE=none
     networks:
       - opensearch-net
