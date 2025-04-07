@@ -36,9 +36,6 @@ services:
       - OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m
       - bootstrap.memory_lock=true
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
-      - plugins.security.ssl.http.enabled=false    # SSL 비활성화
-      - plugins.security.ssl.transport.enabled=false
-      - plugins.security.disabled=true             # 보안 플러그인 비활성화
     ulimits:
       memlock:
         soft: -1
@@ -54,7 +51,7 @@ services:
     networks:
       - opensearch-net
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:${OPENSEARCH_PORT}/_cluster/health || exit 1"]
+      test: ["CMD-SHELL", "curl -k -u admin:${OPENSEARCH_INITIAL_ADMIN_PASSWORD} -f https://localhost:${OPENSEARCH_PORT}/_cluster/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -68,9 +65,7 @@ services:
     expose:
       - '5601'
     environment:
-      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
-      - OPENSEARCH_HOSTS=["http://opensearch:${OPENSEARCH_PORT}"]
-      - OPENSEARCH_SSL_VERIFICATIONMODE=none
+      - OPENSEARCH_HOSTS=["https://opensearch:${OPENSEARCH_PORT}"]
     networks:
       - opensearch-net
 
@@ -262,12 +257,12 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE_DEFAULT}
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:${CONFIG_SERVER_PORT}
       - APP_SEARCH_CONFIG_PATH=/app/config/searchConfig-docker.json
-      - OPENSEARCH_KEYSTORE_PATH=/app/cacerts/cacerts
+      - OPENSEARCH_KEYSTORE_PATH=/opt/java/openjdk/lib/security/cacerts
       - OPENSEARCH_KEYSTORE_PASSWORD=changeit
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-com:3306/${MYSQL_DATABASE}
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-      - OPENSEARCH_PROTOCOL=http
+      - OPENSEARCH_PROTOCOL=https
       - OPENSEARCH_URL=opensearch
       - OPENSEARCH_PORT=9200
       - OPENSEARCH_USERNAME=admin

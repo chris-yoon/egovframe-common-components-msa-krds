@@ -103,7 +103,7 @@ opensearch:
   username: admin
   password: egovFrame123!@#
   keystore:
-    path: /Library/Java/JavaVirtualMachines/jdk-17.0.1.jdk/Contents/Home/lib/security/cacerts
+    path: ${OPENSEARCH_KEYSTORE_PATH:/Library/Java/JavaVirtualMachines/jdk-17.0.1.jdk/Contents/Home/lib/security/cacerts}
     password: changeit
   text:
     indexname: text-bbs-index
