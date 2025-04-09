@@ -26,7 +26,7 @@ spring:
       max-lifetime: ${datasource.hikari.max-lifetime:180000}
   jpa:
     hibernate:
-      ddl-auto: ${jpa.hibernate.ddl-auto:update}
+      ddl-auto: ${jpa.hibernate.ddl-auto:validate}
     open-in-view: ${jpa.open-in-view:false}
     show-sql: ${jpa.show-sql:true}
     properties:
@@ -125,7 +125,7 @@ egov:
       size: 5
 
 app:
-  search-config-path: ${APP_SEARCH_CONFIG_PATH:/config/searchConfig.json}
+  search-config-path: ${APP_SEARCH_CONFIG_PATH:/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/EgovSearch-config/config/searchConfig.json}
 
 ---
 spring:
