@@ -13,21 +13,35 @@
 #### 소프트웨어 요구사항
 
 - **운영체제**
-    - Windows (Windows Server 2019 이상 권장)
-    - macOS (macOS Catalina 이상 권장)
-    - Linux (Ubuntu 22.04 LTS 이상 권장)
-    - Red Hat Enterprise Linux 8 이상
+    - macOS (macOS Sequoia 15.3.2 에서 테스트)
 - **필수 소프트웨어**
-    - Kubernetes v1.25 이상
-    - kubectl v1.25 이상
-    - Helm v3.11 이상
-    - Docker Engine 24.0.0 이상 (Windows 및 macOS의 경우 Docker Desktop 필요)
-    - Java Development Kit (JDK) 17 이상
-    - Git 2.34.1 이상
+    - Docker Desktop for Mac 4.39.0(184744)
+      Docker Engine 28.0.1
+    - Kubernetes v1.32.2
+    - kubectl v1.31.4
+    - Git 2.3.5 (Apple Git-154)
+    - Istio 1.25.0
+    - cert-manager 1.13.2
+    - OpenTelemetry Operator 0.120.0
 - **네트워크**
     - 인터넷 연결 (컨테이너 이미지 다운로드용)
     - NodePort 서비스를 위한 30000-32767 포트 범위
     - Istio Ingress Gateway를 위한 로드밸런서 구성
+- **이미지 목록**
+    - openjdk:8-jre-slim
+      EgovAuthor, EgovBoard, EgovCmmnCode, EgovLogin, EgovMain, EgovMobileId, EgovQuestionnaire 에서 사용
+      slim 버전으로 최소한의 패키지만 포함하며, 프로덕션 환경에서 권장된다.
+    - eclipse-temurin:17-jre-jammy
+      EgovSearch 에서 사용하여 디버깅 목적으로 사용하였다.
+    - mysql:8.0-oracle
+    - opensearchproject/opensearch:2.15.0
+    - opensearchproject/opensearch-dashboards:2.15.0
+    - rabbitmq:3-management
+    - ootel/opentelemetry-collector-contrib:0.120.0
+    - grafana/loki:2.9.2
+    - jaegertracing/all-in-one:1.63.0
+    - prom/prometheus:v2.45.0
+    - grafana/grafana:11.3.1
 
 ### 아키텍처 구성도
 
@@ -557,7 +571,7 @@ spec:
     path: "/your/local/path/EgovSearch-config/cacerts"  # 로컬 절대 경로로 수정
 ```
 
-#### 4.3.2 Istio 설치 (`01-setup-istio.sh`)
+#### 4.3.2 Istio 설치
 Istio 서비스 메시를 설치하고 구성한다:
 ```bash
 ./01-setup-istio.sh
@@ -571,7 +585,7 @@ Istio 서비스 메시를 설치하고 구성한다:
 - Istio 텔레메트리(메트릭, 로그, 트레이스) 설정 적용
 - 설치 완료 후 모든 Istio 파드의 Ready 상태 확인
 
-#### 4.3.3 네임스페이스 생성 (`02-setup-namespaces.sh`)
+#### 4.3.3 네임스페이스 생성
 필요한 네임스페이스를 생성하고 설정한다:
 ```bash
 ./02-setup-namespaces.sh
@@ -582,7 +596,7 @@ Istio 서비스 메시를 설치하고 구성한다:
 - egov-infra와 egov-app 네임스페이스에 Istio sidecar injection 활성화
 - 각 네임스페이스에 필요한 레이블과 어노테이션 적용
 
-#### 4.3.4 모니터링 도구 설치 (`03-setup-monitoring.sh`)
+#### 4.3.4 모니터링 도구 설치
 모니터링 스택을 구성하는 도구들을 설치한다:
 ```bash
 ./03-setup-monitoring.sh
@@ -625,7 +639,7 @@ MySQL과 OpenSearch를 설치한다:
 - 보안 설정 및 인덱스 템플릿 적용
 - OpenSearch 클러스터 상태 확인
 
-#### 4.3.6 인프라 서비스 설치 (`06-setup-infrastructure.sh`)
+#### 4.3.6 인프라 서비스 설치
 Gateway와 RabbitMQ를 설치한다:
 ```bash
 ./06-setup-infrastructure.sh
@@ -637,7 +651,7 @@ Gateway와 RabbitMQ를 설치한다:
 - 필요한 ConfigMap 및 Secret 생성
 - 서비스 상태 및 연결 확인
 
-#### 4.3.7 애플리케이션 서비스 배포 (`07-setup-applications.sh`)
+#### 4.3.7 애플리케이션 서비스 배포
 각 마이크로서비스를 배포한다:
 ```bash
 ./07-setup-applications.sh
@@ -664,6 +678,10 @@ kubectl get pods --all-namespaces
 kubectl get svc gateway-server -n egov-infra
 ```
 
+- EgovMain: http://localhost:9000/main/
+  - 로그인 일반 계정: USER/rhdxhd12
+  - 로그인 업무 계정: TEST1/rhdxhd12
+
 #### 4.5.2 모니터링 도구 접근
 각 모니터링 도구의 역할과 접근 URL:
 
@@ -687,22 +705,102 @@ kubectl get svc gateway-server -n egov-infra
   - CPU, 메모리 사용량, 요청 수, 응답 시간 등 시스템 메트릭 모니터링
   - 알림 규칙 설정 및 관리 기능 제공
 
-기본 접속 정보:
-- Grafana: admin/admin (초기 접속 시 비밀번호 변경 필요)
-- Kiali: admin/admin (기본값)
+- 기본 접속 정보:
+  - Grafana: admin/admin (초기 접속 시 비밀번호 변경 필요)
+  - Kiali: admin/admin (기본값)
 
-#### 4.5.3 애플리케이션 접근 정보 확인
+#### 4.5.3 OpenSearch Dashboard 접근
+
+- OpenSearch Dashboard (http://localhost:30561)
+  - 인덱스, 데이터, 검색 쿼리 등 관리
+
+- 인덱스 확인: 좌측 메뉴 > Dev Tools > Console
+
+```json
+# text-bbs-index 라는 이름을 가진 Index 에서 nttCn 이라는 필드 값이 '테스트'인 100 건의 Document 조회
+# 결과에서 유사도 점수를 표시한다.
+
+GET /text-bbs-index/_search
+{
+  "size": 100,
+  "from": 0, 
+  "track_scores": true,
+  "sort": [
+    {
+      "nttId.keyword": {
+        "order": "desc"
+      }
+    }
+  ],
+  "query": {
+    "match": {
+      "nttCn": "테스트"
+    }
+  }
+}
+
+# text-bbs-index 라는 이름을 가진 Index 에서 nttSj 라는 필드 값이 '테스트'이고 useAt 필드 값은 'Y'인 5 건의 Document 조회
+# 1글자의 오타는 무시하는 설정을 가진다.
+# 결과에서 유사도 점수를 표시한다.
+
+GET /text-bbs-index/_search
+{
+  "size": 5,
+  "from": 0,
+  "track_scores": true,
+  "sort": [
+    "_score",
+    {
+      "nttId": {
+        "order": "desc"
+      }
+    }
+  ],
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "nttSj": {
+              "query": "테스트",
+              "fuzziness": "AUTO"
+            }
+          }
+        },
+        {
+          "match": {
+            "useAt": "Y"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+#### 4.5.4 애플리케이션 접근 정보 확인
 ```bash
 kubectl get svc -n egov-app
 ```
 
-#### 4.5.4 애플리케이션 접근 URL
-- EgovMain: http://localhost:9000/main/
-  - 로그인 일반 계정: USER/rhdxhd12
-  - 로그인 업무 계정: TEST1/rhdxhd12
+#### 4.5.5 애플리케이션 접근 URL
+- EgovSearch: http://localhost:30992/swagger-ui/index.html#/
+  - 텍스트 인덱스 생성: GET /ext/ops/createTextIndex
+  - 벡터 인덱스 생성: GET /ext/ops/createVectorIndex
+  - 인덱스 삭제: GET /ext/ops/deleteIndex
+  - 텍스트 데이터 입력: GET /ext/ops/insertTextData
+  - 벡터 데이터 입력: GET /ext/ops/insertVectorData
+
+- EgovHello: http://localhost:30086/hello
+  - Hello World 메시지 확인
+  - 애플리케이션 로그 (INFO) OpenTelemetry Collector로 전송
+    - Grafana에서 확인 가능
+    - Explorer > Logs > `{job="EgovHello",level="INFO"}` 로 검색
 
 ### 4.6 정리
 #### 4.6.1 정리 스크립트 실행
+- 전체 정리 스크립트 실행
+- ./setup.sh 의 역순으로 실행
 ```bash
 ./cleanup.sh
 ```
@@ -719,18 +817,76 @@ kubectl get namespaces
 
 ## 5. Pod 관리
 ### 5.1 Pod 상태 확인
+
+Pod 상태를 확인하기 위한 스크립트를 제공한다.
+
 ```bash
 ./scripts/utils/pod/check-pod.sh [namespace]
 ```
+사용 예시:
+```bash
+# 특정 네임스페이스의 Pod 확인
+./scripts/utils/pod/check-pod.sh egov-app
+./scripts/utils/pod/check-pod.sh egov-monitoring
+
+# 모든 네임스페이스의 Pod 확인
+./scripts/utils/pod/check-pod.sh all
+```
 
 ### 5.2 Pod 로그 조회
+
+애플리케이션 로그를 조회하기 위한 스크립트를 제공한다.
+
 ```bash
 ./scripts/utils/pod/logs-pod.sh <application-name> [-f|--follow] [-t|--tail <lines>] [-p|--previous]
 ```
 
+옵션:
+- `-f, --follow`: 실시간으로 로그 출력을 계속 따라감
+- `-t, --tail <lines>`: 마지막 몇 줄을 표시할지 지정 (기본값: 100)
+- `-p, --previous`: 이전 컨테이너 인스턴스의 로그 표시
+
+사용 예시:
+```bash
+# 기본 사용 (마지막 100줄 표시)
+./scripts/utils/pod/logs-pod.sh egov-main
+
+# 실시간 로그 보기
+./scripts/utils/pod/logs-pod.sh egov-board -f
+
+# 마지막 500줄 보기
+./scripts/utils/pod/logs-pod.sh egov-login -t 500
+
+# 이전 컨테이너의 로그 보기
+./scripts/utils/pod/logs-pod.sh egov-search -p
+
+# 모니터링 서비스 로그 보기
+./scripts/utils/pod/logs-pod.sh prometheus
+./scripts/utils/pod/logs-pod.sh grafana -f
+```
+
 ### 5.3 Pod 명령어 실행
+
+Pod 내에서 명령어를 실행하기 위한 스크립트를 제공한다.
+
 ```bash
 ./scripts/utils/pod/exec-pod.sh <application-name> [-c|--container <container-name>]
+```
+
+옵션:
+- `-c, --container <container-name>`: 컨테이너 이름 지정 (기본값: Pod의 첫 번째 컨테이너)
+
+사용 예시:
+```bash
+# 기본 사용 (첫 번째 컨테이너에서 명령어 실행)
+./scripts/utils/pod/exec-pod.sh egov-main
+
+# 특정 컨테이너에서 명령어 실행
+./scripts/utils/pod/exec-pod.sh egov-board -c egov-board
+
+# 모니터링 서비스에서 명령어 실행
+./scripts/utils/pod/exec-pod.sh prometheus
+./scripts/utils/pod/exec-pod.sh grafana -c grafana
 ```
 
 ### 5.4 Pod 문제 해결
@@ -742,9 +898,14 @@ kubectl get namespaces
 ### 6.1 OpenTelemetry Collector 설치
 #### 6.1.1 Operator 설치
 ```bash
-kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
+kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/download/v0.120.0/opentelemetry-operator.yaml
 ```
 - Operator를 사용하여 OpenTelemetry Collector를 배포
+  - CRD (Custom Resource Definition) 등록 및 관리
+  - Collector의 라이프사이클 관리
+  - 설정 변경 감지 및 자동 적용
+  - 버전 업그레이드 관리
+  - 여러 Collector 인스턴스의 조정
 - CRD 확인: `kubectl get crd opentelemetrycollectors.opentelemetry.io`
 - `/manifests/scripts/setup/03-setup-monitoring.sh` 스크립트에서 수행
 
@@ -1122,6 +1283,8 @@ dashboardProviders:
 - [Docker](https://www.docker.com/)
 - [Kubernetes](https://kubernetes.io/)
 - [Istio](https://istio.io/)
+- [Cert-Manager](https://cert-manager.io/)
+- [OpenTelemetry Operator](https://github.com/open-telemetry/opentelemetry-operator)
 - [OpenTelemetry](https://opentelemetry.io/)
 - [Jaeger](https://www.jaegertracing.io/)
 - [Prometheus](https://prometheus.io/)

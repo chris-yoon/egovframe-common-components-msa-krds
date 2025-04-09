@@ -20,7 +20,7 @@ kubectl delete -f ../../manifests/egov-monitoring/opentelemetry-collector.yaml 2
 
 # OpenTelemetry Operator 제거
 echo -e "${YELLOW}Removing OpenTelemetry Operator...${NC}"
-kubectl delete -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml 2>/dev/null
+kubectl delete -f https://github.com/open-telemetry/opentelemetry-operator/releases/download/v0.120.0/opentelemetry-operator.yaml 2>/dev/null
 
 # cert-manager 제거
 echo -e "${YELLOW}Removing cert-manager...${NC}"

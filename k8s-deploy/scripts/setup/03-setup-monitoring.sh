@@ -38,12 +38,12 @@ sleep 90
 
 # OpenTelemetry Operator 설치 전 기존 설치 제거
 echo -e "${YELLOW}Cleaning up existing OpenTelemetry Operator...${NC}"
-kubectl delete -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml --ignore-not-found
+kubectl delete -f https://github.com/open-telemetry/opentelemetry-operator/releases/download/v0.120.0/opentelemetry-operator.yaml --ignore-not-found
 sleep 30
 
 # OpenTelemetry Operator 설치
 echo -e "${YELLOW}Installing OpenTelemetry Operator...${NC}"
-kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
+kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/download/v0.120.0/opentelemetry-operator.yaml
 
 # OpenTelemetry Operator가 준비될 때까지 대기
 echo -e "${YELLOW}Waiting for OpenTelemetry Operator to be ready...${NC}"
