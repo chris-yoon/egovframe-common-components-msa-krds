@@ -7,6 +7,12 @@ RUN apt-get update && \
 
 COPY target/*.jar /app/app.jar
 
+# 시작 스크립트 생성
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'cp /app/cacerts/* /opt/java/openjdk/lib/security/' >> /app/start.sh && \
+    echo 'exec java -jar /app/app.jar' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
 ENV SERVER_PORT=80 \
     SPRING_APPLICATION_NAME=EgovSearch \
     SPRING_PROFILES_ACTIVE=k8s \
@@ -19,4 +25,4 @@ HEALTHCHECK --interval=30s --timeout=3s \
 
 EXPOSE 80
 
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["/app/start.sh"]
