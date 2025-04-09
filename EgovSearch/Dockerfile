@@ -18,8 +18,8 @@ ENV SPRING_APPLICATION_NAME=EgovSearch \
     SPRING_CLOUD_CONFIG_URI=http://config-server:8888
 
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl -f http://localhost:8088/actuator/health || exit 1
+  CMD curl -f http://localhost:9992/actuator/health || exit 1
 
-EXPOSE 8088
+EXPOSE 9992
 
 ENTRYPOINT ["/app/start.sh"]
