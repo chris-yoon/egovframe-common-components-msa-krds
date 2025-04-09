@@ -70,6 +70,17 @@ stop_mysql() {
     fi
 }
 
+# OpenSearch 종료 함수
+stop_opensearch() {
+    echo "Checking OpenSearch status..."
+    if docker compose ps | grep -q opensearch; then
+        docker compose -f ./docker-deploy/docker-compose.yml down opensearch opensearch-dashboards
+        echo "OpenSearch stopped"
+    else
+        echo "OpenSearch is not running"
+    fi
+}
+
 # 인자가 있는 경우 해당 서비스만 종료
 if [ $# -eq 1 ]; then
     # 서비스 이름이 유효한지 확인
@@ -98,4 +109,7 @@ else
     
     # MySQL 종료
     stop_mysql
+
+    # OpenSearch 종료
+    stop_opensearch
 fi

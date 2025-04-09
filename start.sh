@@ -7,39 +7,43 @@ NC='\033[0m' # No Color
 
 # MySQL 상태 확인 및 시작 함수
 check_mysql() {
-    # MySQL 프로세스 확인
-    if ! pgrep -f mysqld > /dev/null; then
-        echo -e "${RED}MySQL is not running. Attempting to start MySQL...${NC}"
-        
-        MYSQL_START_SCRIPT="/Users/EGOVEDU/eGovFrame-4.2.0/bin/mysql/start.sh"
-        
-        # 시작 스크립트 존재 확인
-        if [ -f "$MYSQL_START_SCRIPT" ]; then
-            # 실행 권한 확인 및 부여
-            if [ ! -x "$MYSQL_START_SCRIPT" ]; then
-                chmod +x "$MYSQL_START_SCRIPT"
-            fi
-            
-            # MySQL 시작
-            "$MYSQL_START_SCRIPT"
-            
-            # MySQL 시작 대기
-            echo "Waiting for MySQL to start..."
-            sleep 10
-            
-            # MySQL 시작 확인
-            if ! pgrep -f mysqld > /dev/null; then
-                echo -e "${RED}Failed to start MySQL. Please start it manually.${NC}"
-                exit 1
-            fi
-            echo -e "${GREEN}MySQL started successfully.${NC}"
-        else
-            echo -e "${RED}MySQL start script not found at $MYSQL_START_SCRIPT${NC}"
-            echo -e "${RED}Please start MySQL manually.${NC}"
-            exit 1
-        fi
+    echo "Checking MySQL status..."
+    if docker compose -f ./docker-deploy/docker-compose.yml ps | grep -q mysql-com; then
+        echo -e "${GREEN}MySQL is already running${NC}"
     else
-        echo -e "${GREEN}MySQL is already running.${NC}"
+        echo -e "${RED}MySQL is not running. Starting MySQL container...${NC}"
+        
+        # MySQL 컨테이너 시작
+        docker compose -f ./docker-deploy/docker-compose.yml up -d mysql-com
+        
+        # MySQL 시작 대기 (healthcheck가 완료될 때까지)
+        echo "Waiting for MySQL to be ready..."
+        attempt=1
+        max_attempts=30
+        while [ $attempt -le $max_attempts ]; do
+            if docker compose -f ./docker-deploy/docker-compose.yml ps mysql-com | grep -q "healthy"; then
+                echo -e "${GREEN}MySQL is now ready${NC}"
+                return 0
+            fi
+            echo "Attempt $attempt/$max_attempts: MySQL is not ready yet..."
+            sleep 5
+            attempt=$((attempt + 1))
+        done
+        
+        echo -e "${RED}Failed to start MySQL. Please check the logs:${NC}"
+        echo -e "${RED}docker compose -f ./docker-deploy/docker-compose.yml logs mysql-com${NC}"
+        exit 1
+    fi
+}
+
+# OpenSearch 시작 함수
+start_opensearch() {
+    echo "Checking OpenSearch status..."
+    if docker compose ps | grep -q opensearch; then
+        echo "OpenSearch is already running"
+    else
+        docker compose -f ./docker-deploy/docker-compose.yml up -d opensearch opensearch-dashboards
+        echo "OpenSearch started"
     fi
 }
 
@@ -48,6 +52,9 @@ mkdir -p logs
 
 # MySQL 상태 확인
 check_mysql
+
+# OpenSearch 시작
+start_opensearch
 
 # 기본 서비스 순서 정의
 core_services=(
