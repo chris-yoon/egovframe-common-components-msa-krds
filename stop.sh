@@ -44,26 +44,16 @@ stop_service() {
 # MySQL 종료 함수
 stop_mysql() {
     echo "Checking MySQL status..."
-    if pgrep -f mysqld > /dev/null; then
-        MYSQL_STOP_SCRIPT="/Users/EGOVEDU/eGovFrame-4.2.0/bin/mysql/stop.sh"
+    if docker compose -f ./docker-deploy/docker-compose.yml ps | grep -q mysql-com; then
+        echo "Stopping MySQL container..."
+        docker compose -f ./docker-deploy/docker-compose.yml down mysql-com
         
-        if [ -f "$MYSQL_STOP_SCRIPT" ]; then
-            if [ ! -x "$MYSQL_STOP_SCRIPT" ]; then
-                chmod +x "$MYSQL_STOP_SCRIPT"
-            fi
-            
-            echo "Stopping MySQL..."
-            "$MYSQL_STOP_SCRIPT"
-            
-            # MySQL 종료 확인
-            sleep 5
-            if pgrep -f mysqld > /dev/null; then
-                echo -e "${RED}Failed to stop MySQL${NC}"
-            else
-                echo -e "${GREEN}MySQL stopped successfully${NC}"
-            fi
+        # MySQL 종료 확인
+        if ! docker compose -f ./docker-deploy/docker-compose.yml ps | grep -q mysql-com; then
+            echo -e "${GREEN}MySQL stopped successfully${NC}"
         else
-            echo -e "${RED}MySQL stop script not found at $MYSQL_STOP_SCRIPT${NC}"
+            echo -e "${RED}Failed to stop MySQL${NC}"
+            echo -e "${RED}Please check: docker compose -f ./docker-deploy/docker-compose.yml ps${NC}"
         fi
     else
         echo "MySQL is not running"
@@ -73,9 +63,17 @@ stop_mysql() {
 # OpenSearch 종료 함수
 stop_opensearch() {
     echo "Checking OpenSearch status..."
-    if docker compose ps | grep -q opensearch; then
+    if docker compose -f ./docker-deploy/docker-compose.yml ps | grep -q opensearch; then
+        echo "Stopping OpenSearch container..."
         docker compose -f ./docker-deploy/docker-compose.yml down opensearch opensearch-dashboards
-        echo "OpenSearch stopped"
+
+        # OpenSearch 종료 확인
+        if ! docker compose -f ./docker-deploy/docker-compose.yml ps | grep -q opensearch; then
+            echo -e "${GREEN}OpenSearch stopped successfully${NC}"
+        else
+            echo -e "${RED}Failed to stop OpenSearch${NC}"
+            echo -e "${RED}Please check: docker compose -f ./docker-deploy/docker-compose.yml ps${NC}"
+        fi
     else
         echo "OpenSearch is not running"
     fi
