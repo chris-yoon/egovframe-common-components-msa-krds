@@ -89,29 +89,39 @@ get_profile() {
 # 각 서비스 시작 함수
 start_service() {
     local jar_path=$1
-    local log_file=$2
-    local profile=${3:-local}  # 세 번째 인자가 없으면 'local'을 기본값으로 사용
     local service_name=$(basename $jar_path .jar)
+    local profile=${3:-local}
     
+    # 서비스 시작
     if [ "$service_name" == "ConfigServer" ]; then
         echo "Starting $service_name with profile '$profile' and config path..."
-        nohup java -jar $jar_path \
+        java -jar $jar_path \
             --spring.profiles.active=$profile \
             --spring.cloud.config.server.native.search-locations=file:./ConfigServer-config \
-            > $log_file 2>&1 &
+            > /dev/null 2>&1 &
     else
         echo "Starting $service_name with profile '$profile'..."
-        nohup java -jar $jar_path --spring.profiles.active=$profile > $log_file 2>&1 &
+        java -jar $jar_path --spring.profiles.active=$profile > /dev/null 2>&1 &
     fi
     
+    # PID 획득
+    local pid=$!
+    
+    # PID를 포함한 로그 파일 경로 생성
+    local log_file="logs/${service_name}_${pid}.log"
+    
     # 프로세스가 시작되었는지 확인
-    sleep 5
-    if ! ps aux | grep -v grep | grep "$jar_path" > /dev/null; then
-        echo -e "${RED}Failed to start $service_name. Check logs at $log_file${NC}"
+    sleep 2
+    if ps -p $pid > /dev/null; then
+        # 로그 리다이렉션 시작
+        tail -f /dev/null | java -jar $jar_path --spring.profiles.active=$profile > "$log_file" 2>&1 &
+        echo -e "${GREEN}$service_name started successfully with PID: $pid${NC}"
+        echo -e "${GREEN}Log file: $log_file${NC}"
+        return 0
+    else
+        echo -e "${RED}Failed to start $service_name${NC}"
         return 1
     fi
-    echo -e "${GREEN}$service_name started successfully${NC}"
-    return 0
 }
 
 # 서비스 존재 여부 확인 함수
