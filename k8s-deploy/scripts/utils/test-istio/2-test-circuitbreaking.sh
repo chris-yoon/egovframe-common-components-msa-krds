@@ -92,21 +92,21 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 5. 초기 상태 테스트 (10회 요청)
-echo -e "\n${GREEN}5. Initial Test - Expect mix of success and errors${NC}"
-test_endpoint "http://localhost:32314/a/b/c/hello" 10 1
+# 5. 초기 상태 NodePort 테스트 (12회 요청)
+echo -e "\n${GREEN}5. Initial Test (Ingress Gateway NodePort) - Expect mix of success and errors${NC}"
+test_endpoint "http://localhost:32314/a/b/c/hello" 12 1
 
 # 6. Circuit Breaker 동작 테스트 (빠른 요청 20회)
-echo -e "\n${GREEN}6. Circuit Breaker Test - Rapid requests${NC}"
+echo -e "\n${GREEN}6. Circuit Breaker Test - Circuit Open - Rapid requests, expect mostly successes${NC}"
 test_endpoint "http://localhost:32314/a/b/c/hello" 20 0.5
 
-# 7. Circuit Open 상태 확인 (30초 후 10회 요청)
-echo -e "\n${GREEN}7. Waiting 30 seconds for circuit to potentially open...${NC}"
+# 7. Circuit 다시 Closed 상태 확인 (30초 후 12회 요청)
+echo -e "\n${GREEN}7. Waiting 30 seconds for circuit to potentially close again...${NC}"
 sleep 30
-echo -e "\n${GREEN}Testing after wait - Expect mostly successes if circuit is open${NC}"
-test_endpoint "http://localhost:32314/a/b/c/hello" 10 1
+echo -e "\n${GREEN}Testing after wait - Expect mix of success and errors${NC}"
+test_endpoint "http://localhost:32314/a/b/c/hello" 12 1
 
-# 8. 상태 출력
+# 11. 상태 출력
 echo -e "\n${GREEN}8. Current System Status${NC}"
 echo -e "\n${YELLOW}Pods:${NC}"
 kubectl get pods -n egov-app -l app=egov-hello
