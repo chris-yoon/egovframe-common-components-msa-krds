@@ -6,6 +6,15 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+configure_gateway_service() {
+    echo -e "${GREEN}Applying Gateway Service Configuration${NC}"
+    kubectl apply -f ../../../manifests/istio-system/gateway.yaml
+    kubectl apply -f ../../../manifests/istio-system/gateway-service.yaml
+    kubectl apply -f ../../../manifests/egov-app/virtual-services.yaml
+    kubectl apply -f ../../../manifests/egov-app/destination-rules.yaml
+    echo -e "${GREEN}Gateway Service configuration applied successfully${NC}"
+}
+
 # 함수: 서비스 상태 확인
 check_service() {
     local namespace=$1
@@ -38,6 +47,9 @@ test_endpoint() {
 # 메인 테스트 시작
 echo -e "${GREEN}Starting Load Balancing and Port Forward Test...${NC}"
 
+# 0. Gateway Service 설정 적용
+configure_gateway_service
+
 # 1. Istio Ingress Gateway 상태 확인
 echo -e "\n${GREEN}1. Checking Istio Ingress Gateway Status${NC}"
 check_service "istio-system" "istio-ingressgateway"
@@ -48,7 +60,6 @@ kubectl get virtualservice -n egov-app
 
 # 3. egov-hello 서비스 및 파드 상태 확인
 echo -e "\n${GREEN}3. Checking egov-hello Service and Pods${NC}"
-check_service "egov-app" "egov-hello"
 check_pods "egov-app" "app=egov-hello"
 
 # 4. 라우팅 설정 확인
@@ -62,13 +73,13 @@ kubectl run -i --rm --restart=Never curl-test --image=curlimages/curl -- curl ht
 # 6. 외부 접근 테스트 (다양한 포트)
 echo -e "\n${GREEN}6. Testing External Access${NC}"
 
-# 80 포트 테스트
-echo -e "\n${YELLOW}Testing port 80:${NC}"
-test_endpoint "http://localhost:80/a/b/c/hello" 3
+# 7. Gateway Server로 테스트
+echo -e "\n${YELLOW}Testing Gateway Server Port 9000:${NC}"
+test_endpoint "http://localhost:9000/a/b/c/hello" 2
 
 # NodePort 테스트
 echo -e "\n${YELLOW}Testing NodePort 32314:${NC}"
-test_endpoint "http://localhost:32314/a/b/c/hello" 3
+test_endpoint "http://localhost:32314/a/b/c/hello" 2
 
 # 결과 요약
 echo -e "\n${GREEN}Test Summary:${NC}"

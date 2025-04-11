@@ -29,8 +29,12 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,env,refresh
   endpoint:
+    env:
+      enabled: true
+    refresh:
+      enabled: true
     health:
       enabled: true
       show-details: always
