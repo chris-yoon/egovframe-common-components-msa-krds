@@ -39,9 +39,10 @@ check_service() {
     if [ ! -z "$pid" ]; then
         echo -e "${GREEN}✓ $service is running (PID: $pid)${NC}"
         
-        # 로그 파일 최근 에러 확인
-        if [ -f "$LOG_DIR/$service.log" ]; then
-            local errors=$(tail -n 50 "$LOG_DIR/$service.log" | grep -i "error" | wc -l)
+        # PID 기반 로그 파일 확인
+        local log_file="logs/${service}_${pid}.log"
+        if [ -f "$log_file" ]; then
+            local errors=$(tail -n 50 "$log_file" | grep -i "error" | wc -l)
             if [ $errors -gt 0 ]; then
                 echo -e "${YELLOW}  ⚠ Found $errors recent errors in log${NC}"
             fi

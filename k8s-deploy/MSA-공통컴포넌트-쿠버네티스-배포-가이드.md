@@ -581,7 +581,6 @@ Istio 서비스 메시를 설치하고 구성한다:
 - Istio 1.25.0 버전을 다운로드 및 설치
 - istioctl을 사용하여 default 프로필로 Istio 구성요소 설치
 - istio-system 네임스페이스에 기본 설정 적용
-- egov-app 네임스페이스에 sidecar injection 활성화
 - Istio 텔레메트리(메트릭, 로그, 트레이스) 설정 적용
 - 설치 완료 후 모든 Istio 파드의 Ready 상태 확인
 

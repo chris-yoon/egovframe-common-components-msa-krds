@@ -7,12 +7,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/hello")
+@RequestMapping("/a/b/c")
 public class HelloController {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(HelloController.class);
     
-    @GetMapping
+    @GetMapping("/hello")
     public String hello() {
         LOGGER.info("Hello API called");
         return "Hello from EgovFramework!";

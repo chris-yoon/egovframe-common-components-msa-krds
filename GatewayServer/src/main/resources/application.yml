@@ -44,10 +44,6 @@ spring:
             - Path=/main/**
           filters:
             - RewritePath=/main/(?<segment>.*), /${segment}
-            - name: CircuitBreaker
-              args:
-                name: mainCircuitBreaker
-                fallbackUri: forward:/fallback/main
 
         - id: EgovLogin
           uri: ${service.uri.login}  # 변수 사용
@@ -224,6 +220,13 @@ spring:
             - RewritePath=/ext/ops/(?<segment>.*), /ext/ops/${segment}
             - name: Auth
 
+        - id: EgovHello
+          uri: ${service.uri.hello}  # 변수 사용
+          predicates:
+            - Path=/a/b/c/**
+          filters:
+            - RewritePath=/a/b/c/(?<segment>.*), /a/b/c/${segment}
+
 logging:
   level:
     org:
@@ -296,6 +299,7 @@ service:
     questionnaire: lb://EGOVQUESTIONNAIRE
     cmmncode: lb://EGOVCMMNCODE
     search: lb://EGOVSEARCH
+    hello: lb://EGOVHELLO
 
 ---
 spring:
@@ -326,3 +330,4 @@ service:
     questionnaire: http://egov-questionnaire.egov-app.svc.cluster.local
     cmmncode: http://egov-cmmncode.egov-app.svc.cluster.local
     search: http://egov-search.egov-app.svc.cluster.local
+    hello: http://egov-hello.egov-app.svc.cluster.local

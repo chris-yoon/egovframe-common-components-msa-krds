@@ -20,6 +20,7 @@ usage() {
     echo "  - egov-questionnaire"
     echo "  - egov-cmmncode"
     echo "  - egov-search"
+    echo "  - egov-hello"
     
     echo -e "\nDatabase Services (egov-db namespace):"
     echo "  - mysql"
@@ -56,7 +57,7 @@ if [ $# -eq 0 ]; then
 fi
 
 # 유효한 애플리케이션 목록
-EGOV_APP_SERVICES=("egov-main" "egov-board" "egov-login" "egov-author" "egov-mobileid" "egov-questionnaire" "egov-cmmncode" "egov-search")
+EGOV_APP_SERVICES=("egov-main" "egov-board" "egov-login" "egov-author" "egov-mobileid" "egov-questionnaire" "egov-cmmncode" "egov-search" "egov-hello")
 EGOV_DB_SERVICES=("mysql" "opensearch")
 MONITORING_SERVICES=("prometheus" "grafana" "kiali" "jaeger" "loki" "otel-collector")
 EGOV_INFRA_SERVICES=("gateway-server" "rabbitmq")
