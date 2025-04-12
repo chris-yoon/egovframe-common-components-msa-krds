@@ -133,21 +133,67 @@ chmod +x *.sh
 
 ### 4.1 테스트 설정
 서킷브레이커 테스트는 다음 구성요소를 사용합니다:
-- EgovHello Error Deployment (`manifests/egov-app/egov-hello-error-deployment.yaml`)
-- Destination Rule with Circuit Breaker (`manifests/egov-app/destination-rules.yaml`)
+
+1. EgovHello Error Deployment (`manifests/egov-app/egov-hello-error-deployment.yaml`)
+   - 강제로 오류를 발생시키는 테스트용 deployment
+   - `FORCE_ERROR: "true"` 환경변수 설정으로 500 에러 발생
+   ```yaml
+   spec:
+     template:
+       spec:
+         containers:
+         - name: egov-hello
+           env:
+           - name: FORCE_ERROR
+             value: "true"
+   ```
+
+   관련 코드 (`EgovHello/src/main/java/egovframework/com/hello/web/HelloController.java`):
+   ```java
+   @RestController
+   @RequestMapping("/a/b/c")
+   public class HelloController {
+       @Value("${FORCE_ERROR:false}")
+       private boolean forceError;
+       
+       @GetMapping("/hello")
+       public String hello() {
+           if (forceError) {
+               throw new ResponseStatusException(
+                   HttpStatus.INTERNAL_SERVER_ERROR, 
+                   "Forced error"
+               );
+           }
+           return "Hello from EgovFramework!";
+       }
+   }
+   ```
+
+   이 설정으로:
+   - 정상 deployment (2개 Pod)는 성공 응답 반환
+   - Error deployment (1개 Pod)는 항상 500 에러 반환
+   - 총 3개의 Pod 중 1개가 항상 실패하는 상황 시뮬레이션
+
+2. Destination Rule with Circuit Breaker (`manifests/egov-app/destination-rules.yaml`)
 
 ### 4.2 테스트 실행
 ```bash
 ./2-test-circuitbreaking.sh
 ```
 
-### 4.3 테스트 시나리오
+### 4.3 Ingress Gateway 테스트 시나리오
+
+Istio Ingress Gateway -> EgovHello 서비스 요청을 테스트합니다
+Istio Ingress Gateway NodePort (32314) 확인
+```bash
+kubectl get svc istio-ingressgateway -n istio-system
+```
+
 1. EgovHello Error Deployment 적용
 2. Destination Rule 적용
-3. 초기 상태 테스트 (12회 요청) - 성공과 실패가 혼합되어야 함. 정상 POD 2개, Error POD 1개, 에러율 약 33% 
+3. 초기 상태 테스트 (12회 요청 http://localhost:32314/a/b/c/hello) - 성공과 실패가 혼합되어야 함. 정상 POD 2개, Error POD 1개, 에러 3번 발생
 4. Circuit Breaker 동작 테스트 (빠른 요청 20회) - Circuit 이 Open 되어 대부분 성공해야 함
 5. Circuit 다시 Closed 상태 확인 (30초 후 12회 요청) - 다시 Circuit 이 Closed 되어 성공과 실패가 혼합되어야 함
-6. Gateway Server를 통한 테스트 (30초 후 12회 요청) - Gateway Server의 Circuit Breaker 동작 확인
 
 ### 4.4 Gateway Server 테스트
 Gateway Server를 통한 테스트는 Istio의 Circuit Breaker가 Gateway Server의 트래픽에도 적용되는지 확인하는 단계입니다.
@@ -215,6 +261,92 @@ kubectl logs -l app=egov-hello -c istio-proxy -n egov-app
 # 애플리케이션 로그 확인
 kubectl logs -l app=egov-hello -c egov-hello -n egov-app
 ```
+
+### 4.6 Production 환경 Circuit Breaker 설정 가이드
+
+#### 4.6.1 테스트 환경과 운영 환경의 차이점
+현재 테스트 설정:
+```yaml
+outlierDetection:
+  interval: 1s
+  consecutive5xxErrors: 3
+  baseEjectionTime: 30s
+  maxEjectionPercent: 100
+```
+
+이 설정은 테스트 목적으로 빠른 피드백을 위해 설계되었으며, Production에는 적합하지 않습니다.
+
+#### 4.6.2 Production 권장 설정
+```yaml
+outlierDetection:
+  interval: 10s                    # 더 긴 간격으로 검사
+  consecutive5xxErrors: 5          # 더 많은 오류 허용
+  baseEjectionTime: 300s          # 5분의 초기 제외 시간
+  maxEjectionPercent: 50          # 최대 50%만 제외하여 안전성 확보
+  minHealthPercent: 60            # 최소 60% 이상의 정상 Pod 유지
+```
+
+#### 4.6.3 설정 근거
+1. 장애 복구 시간 고려
+   - 대부분의 장애 복구에는 30초 이상 소요
+   - 자동 복구 스크립트 실행 시간
+   - 로그 수집 및 분석 시간
+   - 운영자의 초기 대응 시간
+
+2. 안정성 확보
+   - `maxEjectionPercent: 50`: 항상 절반 이상의 Pod 유지
+   - `minHealthPercent: 60`: 최소 서비스 가용성 보장
+   - 점진적인 장애 복구 가능
+
+3. 오탐 방지
+   - `consecutive5xxErrors: 5`: 일시적 네트워크 오류 무시
+   - `interval: 10s`: 더 안정적인 상태 판단
+
+#### 4.6.4 복구 프로세스
+1. 장애 발생 시 (5회 연속 오류)
+   - 해당 Pod는 5분간 트래픽에서 제외
+   - 모니터링 알림 발생
+   - 운영팀 초기 대응 시작
+
+2. 복구 단계
+   - 로그 분석 및 원인 파악 (1-2분)
+   - 필요한 조치 실행 (2-3분)
+   - 정상 동작 확인 (1분)
+
+3. Circuit 자동 복구
+   - 5분 후 Half-Open 상태로 전환
+   - 점진적으로 트래픽 재개
+   - 완전한 정상 상태 확인
+
+#### 4.6.5 모니터링 및 알림 설정
+```yaml
+# Prometheus Alert 규칙 예시
+groups:
+- name: CircuitBreaker
+  rules:
+  - alert: CircuitBreakerOpen
+    expr: istio_requests_total{response_code=~"5.*"} > 5
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Circuit Breaker Opened for {{ $labels.service }}"
+```
+
+#### 4.6.6 운영 체크리스트
+1. 정기적인 상태 확인
+   ```bash
+   # Circuit Breaker 상태 확인
+   kubectl get destinationrule -n egov-app -o yaml
+   
+   # Pod 상태 및 분포 확인
+   kubectl get pods -n egov-app -o wide
+   ```
+
+2. 장애 대응 준비
+   - 로그 수집 자동화
+   - 복구 스크립트 준비
+   - 운영자 대응 매뉴얼 구비
 
 ## 5. 트래픽 관리
 
