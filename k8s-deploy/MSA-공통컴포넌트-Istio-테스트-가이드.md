@@ -539,6 +539,12 @@ spec:
    }]' http://localhost:9093/api/v1/alerts
    ```
 
+5. AlertManager UI 확인
+   ```bash
+   kubectl port-forward svc/alertmanager -n egov-monitoring 9093:9093
+   ```
+   - URL: http://localhost:9093/#/alerts
+
 ### 6.3 Circuit Breaker 알림 테스트 실행
 - Circuit Breaker가 Open 되었을 때 알림이 전송되는지 확인하는 스크립트 실행
 ```bash
@@ -555,17 +561,30 @@ spec:
 
 2. 알림 규칙 확인
    ```bash
-   kubectl get prometheusrules -n egov-monitoring
+   # Prometheus Rules 확인
+   kubectl get configmap prometheus-rules -n egov-monitoring
+   
+   # 규칙 내용 상세 확인
+   kubectl get configmap prometheus-rules -n egov-monitoring -o yaml
    ```
 
 3. 알림 발생 확인
-   ```bash
-   # 에러 요청 생성
-   for i in {1..10}; do curl http://localhost:32314/a/b/c/hello; done
+  ```bash
+  # 에러 요청 생성
+  for i in {1..20}; do 
+    echo "Request $i:"
+    curl -s http://localhost:32314/a/b/c/hello
+    echo
+    sleep 0.5
+  done
 
-   # 알림 확인
-   kubectl logs -l app=alertmanager -n egov-monitoring
-   ```
+  # AlertManager 가 정상적으로 작동하는지 로그 확인
+  kubectl logs -l app=alertmanager -n egov-monitoring
+
+  # 알림 전송 상태 확인
+  kubectl port-forward svc/alertmanager -n egov-monitoring 9093:9093
+  http://localhost:9093/#/alerts
+  ```
 
 4. Slack 채널 확인
    - 알림이 전송되었는지 확인

@@ -24,14 +24,23 @@ k8s-deploy/
 │   │   ├── egov-mobileid-pv.yaml            # EgovMobileId PV 설정 파일
 │   │   ├── egov-questionnaire-deployment.yaml  # EgovQuestionnaire 배포 파일
 │   │   ├── egov-search-pv.yaml              # EgovSearch PV 설정 파일
-│   │   └── egov-search-deployment.yaml      # EgovSearch 배포 파일
+│   │   ├── egov-search-deployment.yaml      # EgovSearch 배포 파일
+│   │   ├── egov-hello-deployment.yaml      # EgovHello 배포 파일: 애플리케이션 로그 (INFO) OpenTelemetry Collector로 전송
+│   │   ├── egov-hello-error-deployment.yaml  # EgovHello Error 배포 파일: 애플리케이션 로그 (ERROR) OpenTelemetry Collector로 전송, Circuit Breaker 테스트용
+│   │   ├── virtual-services.yaml           # VirtualService 설정 파일: 로드밸런싱 테스트용
+│   │   └── destination-rules.yaml          # DestinationRule 설정 파일: Circuit Breaker 테스트용
 │   ├── egov-db/            # 데이터베이스 관련 매니페스트
 │   │   ├── mysql-pv.yaml                  # MySQL PV 설정 파일
 │   │   ├── mysql-secret.yaml              # MySQL 비밀번호 설정 파일
 │   │   ├── mysql-statefulset.yaml         # MySQL StatefulSet 설정 파일
 │   │   ├── mysql-service.yaml             # MySQL 서비스 설정 파일
 │   │   ├── opensearch-service.yaml        # OpenSearch 서비스 설정 파일
-│   │   └── opensearch-statefulset.yaml   # OpenSearch StatefulSet 설정 파일
+│   │   ├── opensearch-statefulset.yaml   # OpenSearch StatefulSet 설정 파일
+│   │   ├── opensearch-configmap.yaml      # OpenSearch 설정 파일
+│   │   ├── opensearch-secret.yaml        # OpenSearch 비밀번호 설정 파일
+│   │   ├── opensearch-certs-secret.yaml  # OpenSearch 인증서 설정 파일
+│   │   ├── opensearch-dashboard-deployment.yaml  # OpenSearch Dashboard 배포 파일
+│   │   └── opensearch-pv.yaml             # OpenSearch PV 설정 파일
 │   ├── egov-infra/         # 인프라 서비스 매니페스트
 │   │   ├── egov-common-configmap.yaml     # 공통 환경 변수 설정 파일
 │   │   ├── gatewayserver-deployment.yaml  # 게이트웨이 서버 배포 파일
@@ -48,6 +57,9 @@ k8s-deploy/
 │       ├── kiali.yaml        # Kiali 설정 파일
 │       ├── loki.yaml         # Loki 설정 파일
 │       ├── prometheus.yaml   # Prometheus 설정 파일
+│       ├── alertmanager.yaml  # AlertManager 설정 파일
+│       ├── alertmanager-config.yaml  # AlertManager 구성 설정 파일
+│       ├── circuit-breaker-alerts-configmap.yaml  # Circuit Breaker 알림 설정 파일
 │       └── opentelemetry-collector.yaml  # OpenTelemetry Collector 설정 파일
 └── scripts/
     ├── setup/             # 설치 스크립트
@@ -58,7 +70,9 @@ k8s-deploy/
     │   ├── 04-setup-mysql.sh         # MySQL 설치 스크립트
     │   ├── 05-setup-opensearch.sh    # OpenSearch 설치 스크립트
     │   ├── 06-setup-infrastructure.sh # 인프라 서비스 설치 스크립트
-    │   └── 07-setup-applications.sh  # 애플리케이션 서비스 배포 스크립트
+    │   ├── 07-setup-applications.sh  # 애플리케이션 서비스 배포 스크립트
+    │   ├── 08-show-access-info.sh  # 서비스 접근 정보 출력 스크립트
+    │   └── manual-install-guide.sh  # 수동 설치 가이드 스크립트
     ├── cleanup/           # 정리 스크립트
     │   ├── cleanup.sh        # 전체 정리 스크립트
     │   ├── 01-cleanup-applications.sh    # 애플리케이션 정리 스크립트
@@ -69,10 +83,17 @@ k8s-deploy/
     │   ├── 06-cleanup-namespaces.sh    # 네임스페이스 정리 스크립트
     │   └── 07-cleanup-istio.sh         # Istio 정리 스크립트
     └── utils/           # 유틸리티 스크립트
+        ├── test-istio/               # Istio 테스트 스크립트
+        │   ├── 1-test-loadbalancing.sh  # 로드밸런싱 테스트 스크립트
+        │   ├── 2-test-circuitbreaking.sh  # 서킷브레이커 테스트 스크립트
+        │   ├── 3-test-alerting.sh  # 알림 전송 테스트 스크립트
+        │   ├── 4-test-alert-notification.sh  # Circuit Breaker 알림 테스트 스크립트
+        │   └── manual-test-istio-guide.sh  # Istio 수동 테스트 가이드 스크립트
         └── pod/               # Pod 관련 유틸리티 스크립트
            ├── check-pod.sh      # Pod 상태 확인 스크립트
            ├── exec-pod.sh       # Pod 내 컨테이너 실행 스크립트
            └── logs-pod.sh       # Pod 로그 확인 스크립트
+
 ```
 
 ### 디렉토리 설명
