@@ -239,4 +239,4 @@ kubectl get pods --all-namespaces
 
 echo -e "\n${GREEN}Setup completed successfully!${NC}"
 echo -e "${YELLOW}Please check the services using:${NC}"
-echo "kubectl get pods,svc --all-namespaces"
+${SCRIPT_DIR}/08-show-access-info.sh

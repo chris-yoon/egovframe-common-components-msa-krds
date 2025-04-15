@@ -50,15 +50,20 @@ echo -e "${YELLOW}Waiting for OpenTelemetry Operator to be ready...${NC}"
 kubectl wait --for=condition=Ready pods -l control-plane=controller-manager -n opentelemetry-operator-system --timeout=300s
 
 # CRD 설치 확인
-echo -e "${YELLOW}Verifying OpenTelemetry CRDs...${NC}"f
+echo -e "${YELLOW}Verifying OpenTelemetry CRDs...${NC}"
 if ! kubectl get crd opentelemetrycollectors.opentelemetry.io >/dev/null 2>&1; then
     echo -e "${RED}OpenTelemetry CRDs not found. Installation may have failed.${NC}"
     exit 1
 fi
 
+# AlertManager 설정 적용
+echo -e "${YELLOW}Setting up AlertManager configuration...${NC}"
+kubectl apply -f "../../manifests/egov-monitoring/alertmanager-config.yaml"
+kubectl apply -f "../../manifests/egov-monitoring/circuit-breaker-alerts-configmap.yaml"
+
 # 모니터링 컴포넌트 설치
 echo -e "${YELLOW}Installing monitoring components...${NC}"
-for addon in prometheus grafana kiali jaeger loki; do
+for addon in prometheus grafana kiali jaeger loki alertmanager; do
     echo -e "${GREEN}Installing ${addon}...${NC}"
     kubectl apply -f "../../manifests/egov-monitoring/${addon}.yaml"
     sleep 5
@@ -80,8 +85,12 @@ kubectl wait --for=condition=Ready pods -l app.kubernetes.io/name=otel-collector
 echo -e "${YELLOW}Checking OpenTelemetry Collector pod status...${NC}"
 kubectl get pods -n egov-monitoring -l app.kubernetes.io/name=otel-collector-collector -o wide
 
+# AlertManager 준비 대기
+echo -e "${YELLOW}Waiting for AlertManager to be ready...${NC}"
+kubectl wait --for=condition=Ready pods -l app=alertmanager -n egov-monitoring --timeout=300s
+
 # 설치 완료까지 대기
-echo -e "${YELLOW}Waiting for pods to be ready...${NC}"
+echo -e "${YELLOW}Waiting for all pods to be ready...${NC}"
 kubectl wait --for=condition=Ready pods --all -n egov-monitoring --timeout=300s
 
 # 설치된 pods 확인
@@ -96,8 +105,11 @@ echo -e "${GREEN}Telemetry configuration completed!${NC}"
 
 # 접근 URL 출력
 echo -e "${YELLOW}Access URLs:${NC}"
-echo "Kiali:      http://localhost:30001"
-echo "Grafana:    http://localhost:30002"
-echo "Jaeger:     http://localhost:30003"
-echo "Prometheus: http://localhost:30004"
+echo "Kiali:        http://localhost:30001"
+echo "Grafana:      http://localhost:30002"
+echo "Jaeger:       http://localhost:30003"
+echo "Prometheus:   http://localhost:30004"
+echo "AlertManager: http://localhost:9093 (requires port-forward)"
+echo -e "\n${YELLOW}To access AlertManager, run:${NC}"
+echo "kubectl port-forward svc/alertmanager -n egov-monitoring 9093:9093"
 
