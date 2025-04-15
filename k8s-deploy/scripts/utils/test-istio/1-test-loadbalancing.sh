@@ -78,7 +78,7 @@ echo -e "\n${YELLOW}Testing Gateway Server Port 9000:${NC}"
 test_endpoint "http://localhost:9000/a/b/c/hello" 2
 
 # NodePort 테스트
-echo -e "\n${YELLOW}Testing NodePort 32314:${NC}"
+echo -e "\n${YELLOW}Testing Istio Ingress GatewayNodePort 32314:${NC}"
 test_endpoint "http://localhost:32314/a/b/c/hello" 2
 
 # 결과 요약
