@@ -16,7 +16,7 @@ check_deployment() {
     echo -e "${YELLOW}Waiting for deployment $deployment to be ready...${NC}"
     while [ $attempt -le $max_attempts ]; do
         local ready=$(kubectl get deployment $deployment -n $namespace -o jsonpath='{.status.readyReplicas}')
-        if [ "$ready" == "1" ]; then
+        if [ "$ready" == "2" ]; then
             echo -e "${GREEN}Deployment $deployment is ready${NC}"
             return 0
         fi
@@ -59,6 +59,12 @@ test_endpoint() {
 
 # 메인 테스트 시작
 echo -e "${GREEN}Starting Circuit Breaking Test...${NC}"
+
+# 0. egov-hello Deployment 실행확인 
+echo -e "\n${GREEN}0. Checking egov-hello Deployment${NC}"
+kubectl apply -f ../../../manifests/egov-app/egov-hello-deployment.yaml
+sleep 20
+check_deployment "egov-app" "egov-hello"
 
 # 1. Error Deployment 적용
 echo -e "\n${GREEN}1. Applying Error Deployment${NC}"

@@ -393,25 +393,219 @@ spec:
         host: egov-hello
 ```
 
-## 6. 모니터링
+## 6. 알림 테스트
 
-### 6.1 Kiali 대시보드
-```bash
-kubectl port-forward svc/kiali -n istio-system 20001:20001
-```
-접속: http://localhost:20001
+### 6.1 테스트 설정
+알림 테스트는 다음 구성요소를 사용합니다:
 
-### 6.2 Grafana 대시보드
-```bash
-kubectl port-forward svc/grafana -n istio-system 3000:3000
-```
-접속: http://localhost:3000
+1. AlertManager (`manifests/egov-monitoring/alertmanager-config.yaml`)
+   ```yaml
+   apiVersion: v1
+   kind: Secret
+   metadata:
+     name: alertmanager-config
+     namespace: egov-monitoring
+   stringData:
+     alertmanager.yaml: |
+       global:
+         resolve_timeout: 5m
+         slack_api_url: 'https://hooks.slack.com/triggers/YOUR_WEBHOOK_URL'
 
-### 6.3 Jaeger 추적
+       route:
+         group_by: ['alertname', 'service', 'severity']
+         group_wait: 10s
+         group_interval: 10s
+         repeat_interval: 1h
+         receiver: 'slack-notifications'
+         routes:
+         - match:
+             severity: critical
+           receiver: 'slack-notifications'
+           continue: true
+
+       receivers:
+       - name: 'slack-notifications'
+         slack_configs:
+         - channel: '#egovalertmanager'
+           send_resolved: true
+           text: >-
+             {{ if eq .Status "firing" }}🔥 *Alert Firing*{{ else }}✅ *Alert Resolved*{{ end }}
+             {{ range .Alerts }}
+             *Alert:* {{ .Annotations.summary }}
+             *Description:* {{ .Annotations.description }}
+             *Service:* {{ .Labels.service }}
+             *Severity:* {{ .Labels.severity }}
+             *Status:* {{ .Status }}
+             {{ end }}
+   ```
+
+2. 알림 규칙 (`manifests/egov-monitoring/circuit-breaker-alerts-configmap.yaml`)
+   ```yaml
+   apiVersion: v1
+   kind: ConfigMap
+   metadata:
+     name: prometheus-rules
+     namespace: egov-monitoring
+   data:
+     circuit-breaker-alerts.yaml: |
+       groups:
+       - name: CircuitBreakerAlerts
+         rules:
+         - alert: CircuitBreakerOpen
+           expr: |
+             sum(increase(istio_requests_total{
+               response_code=~"5.*",
+               destination_service="egov-hello.egov-app.svc.cluster.local"
+             }[5m])) by (destination_service) > 0
+           for: 10s
+           labels:
+             severity: critical
+             service: egov-hello
+           annotations:
+             summary: "Circuit Breaker Opened for egov-hello"
+             description: "Circuit Breaker가 Open 되었습니다. 2회 이상의 연속 오류가 발생했습니다."
+   ```
+
+3. Prometheus (`manifests/egov-monitoring/prometheus.yaml`)
+   - AlertManager와 연동
+   - 알림 규칙 적용
+   ```yaml
+   alerting:
+     alertmanagers:
+     - static_configs:
+       - targets:
+         - alertmanager:9093
+   rule_files:
+   - /etc/prometheus/rules/*.yaml
+   ```
+   - volume mounts 추가
+   ```yaml
+   volumeMounts:
+     - name: prometheus-rules
+       mountPath: /etc/prometheus/rules
+   ```
+   - volumes 추가
+   ```yaml
+   volumes:
+     - name: prometheus-rules
+       configMap:
+         name: prometheus-rules
+   ```
+
+### 6.2 알림 전송 테스트 실행
+- slack 채널로 알림이 전송되는지 확인하는 스크립트 실행
 ```bash
-kubectl port-forward svc/jaeger-query -n istio-system 16686:16686
+./3-test-alerting.sh
 ```
-접속: http://localhost:16686
+
+### 6.2.1 테스트 시나리오
+
+1. AlertManager 설정 적용
+   ```bash
+   kubectl apply -f manifests/egov-monitoring/alertmanager-config.yaml
+   kubectl rollout restart deployment alertmanager -n egov-monitoring
+   ```
+
+2. AlertManager 상태 확인
+   ```bash
+   # 로그 확인
+   kubectl logs -l app=alertmanager -n egov-monitoring
+
+   # 설정 확인
+   kubectl get secret alertmanager-config -n egov-monitoring -o jsonpath='{.data.alertmanager\.yaml}' | base64 -d
+   ```
+
+3. 연결 테스트
+   ```bash
+   # 포트포워딩
+   kubectl port-forward svc/alertmanager -n egov-monitoring 9093:9093
+
+   # 상태 확인
+   curl -s http://localhost:9093/-/healthy
+   ```
+
+4. 테스트 알림 전송
+   ```bash
+   curl -H "Content-Type: application/json" -d '[{
+     "labels": {
+       "alertname": "TestAlert",
+       "service": "test-service",
+       "severity": "critical"
+     },
+     "annotations": {
+       "summary": "Test Alert",
+       "description": "This is a test alert"
+     }
+   }]' http://localhost:9093/api/v1/alerts
+   ```
+
+### 6.3 Circuit Breaker 알림 테스트 실행
+- Circuit Breaker가 Open 되었을 때 알림이 전송되는지 확인하는 스크립트 실행
+```bash
+./4-test-alert-notification.sh
+```
+
+### 6.3.1 테스트 시나리오
+
+1. 알림 규칙 적용
+   ```bash
+   kubectl apply -f manifests/egov-monitoring/circuit-breaker-alerts-configmap.yaml
+   kubectl rollout restart deployment prometheus -n egov-monitoring
+   ```
+
+2. 알림 규칙 확인
+   ```bash
+   kubectl get prometheusrules -n egov-monitoring
+   ```
+
+3. 알림 발생 확인
+   ```bash
+   # 에러 요청 생성
+   for i in {1..10}; do curl http://localhost:32314/a/b/c/hello; done
+
+   # 알림 확인
+   kubectl logs -l app=alertmanager -n egov-monitoring
+   ```
+
+4. Slack 채널 확인
+   - 알림이 전송되었는지 확인
+
+### 6.4 알림 설정 가이드
+
+#### 6.4.1 알림 임계값 조정
+- 에러 횟수: 5회/5분
+- 지속 시간: 10초
+- 심각도: critical
+
+#### 6.4.2 알림 형식
+- 발생 시: 🔥 Alert Firing
+- 해결 시: ✅ Alert Resolved
+- 포함 정보:
+  - Alert 이름
+  - 설명
+  - 서비스명
+  - 심각도
+  - 상태
+
+#### 6.4.3 문제 해결
+일반적인 문제 및 해결 방법:
+
+1. AlertManager 템플릿 오류
+   ```bash
+   # 로그 확인
+   kubectl logs -l app=alertmanager -n egov-monitoring
+   ```
+
+2. Slack 연동 실패
+   - Webhook URL 유효성 확인
+   - AlertManager 외부 네트워크 연결 확인
+   - 설정 문법 오류 확인
+
+3. 알림 규칙 문제
+   ```bash
+   # 규칙 상태 확인
+   kubectl get prometheusrules -n egov-monitoring
+   ```
 
 ## 7. 문제 해결
 

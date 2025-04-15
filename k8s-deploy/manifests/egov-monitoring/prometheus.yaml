@@ -29,23 +29,30 @@ metadata:
   name: prometheus
   namespace: egov-monitoring
 data:
-  allow-snippet-annotations: "false"
-  alerting_rules.yml: |
-    {}
-  alerts: |
-    {}
   prometheus.yml: |
     global:
       evaluation_interval: 1m
       scrape_interval: 15s
       scrape_timeout: 10s
+      external_labels: {}
+      query_log_file: ""
+
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - alertmanager:9093
+
     rule_files:
-    - /etc/config/recording_rules.yml
-    - /etc/config/alerting_rules.yml
-    - /etc/config/rules
-    - /etc/config/alerts
+    - /etc/prometheus/rules/*.yaml
+
     scrape_configs:
     - job_name: otel-collector
+      honor_timestamps: true
+      scrape_interval: 15s
+      scrape_timeout: 10s
+      metrics_path: /metrics
+      scheme: http
       static_configs:
       - targets:
         - otel-collector.egov-monitoring.svc.cluster.local:8889
@@ -448,6 +455,19 @@ spec:
     app.kubernetes.io/name: prometheus
     app.kubernetes.io/instance: prometheus
 ---
+# Add PVC definition
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-storage
+  namespace: egov-monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
 # Source: prometheus/templates/deploy.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -521,6 +541,8 @@ spec:
               mountPath: /etc/prometheus
             - name: storage-volume
               mountPath: /prometheus
+            - name: prometheus-rules
+              mountPath: /etc/prometheus/rules  # 경로 수정
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -531,9 +553,12 @@ spec:
         - name: config-volume
           configMap:
             name: prometheus
+        - name: prometheus-rules
+          configMap:
+            name: prometheus-rules
         - name: storage-volume
-          emptyDir:
-            sizeLimit: 20Gi
+          persistentVolumeClaim:
+            claimName: prometheus-storage
       terminationGracePeriodSeconds: 300
       affinity:
         podAntiAffinity:
