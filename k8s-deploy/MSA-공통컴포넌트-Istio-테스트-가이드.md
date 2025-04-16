@@ -152,15 +152,15 @@ chmod +x *.sh
 
 ### 3.3 테스트 확인 사항
 
-1. Gateway Service가 정상 배포되었는지 확인
+4. Gateway Service가 정상 배포되었는지 확인
     
-2. Istio Ingress Gateway의 동작 여부 확인
+5. Istio Ingress Gateway의 동작 여부 확인
     
-3. Virtual Service 설정 확인
+6. Virtual Service 설정 확인
     
-4. egov-hello 애플리케이션 Pod 상태 확인
+7. egov-hello 애플리케이션 Pod 상태 확인
     
-5. 트래픽 라우팅이 정상 동작하며, 요청이 여러 Pod에 분산되는지 확인
+8. 트래픽 라우팅이 정상 동작하며, 요청이 여러 Pod에 분산되는지 확인
     
 
 ### 3.4 결과 분석
@@ -207,15 +207,15 @@ chmod +x *.sh
 
 ### 4.3 Ingress Gateway 테스트 시나리오
 
-1. Ingress Gateway (NodePort 32314) 확인
+9. Ingress Gateway (NodePort 32314) 확인
     
-2. EgovHello Error Deployment 적용
+10. EgovHello Error Deployment 적용
     
-3. Destination Rule(서킷브레이커) 적용
+11. Destination Rule(서킷브레이커) 적용
     
-4. 에러를 발생시키는 Pod와 정상 Pod 간 요청 분배 확인
+12. 에러를 발생시키는 Pod와 정상 Pod 간 요청 분배 확인
     
-5. Circuit Breaker 동작 후, 일정 시간(30초) 지난 뒤 Pod가 다시 트래픽에 포함되는지 확인
+13. Circuit Breaker 동작 후, 일정 시간(30초) 지난 뒤 Pod가 다시 트래픽에 포함되는지 확인
     
 
 ### 4.4 Gateway Server를 통한 테스트
@@ -281,7 +281,11 @@ kubectl logs -l app=egov-hello -c egov-hello -n egov-app
 	    
 	- 운영 환경에서는 Circuit이 Open될 정도로 에러가 발생하면, 원인 분석과 조치가 필수
 
+![[Pasted image 20250416161426.png]]
 
+![[Pasted image 20250416161210.png]]
+
+![[Pasted image 20250416161238.png]]
 ### 4.6 운영 환경 서킷브레이커 설정 가이드
 
 #### 4.6.1 테스트 vs 운영 환경 차이
@@ -302,11 +306,11 @@ outlierDetection:
 
 #### 4.6.2 설정 근거 및 복구 프로세스
 
-1. 장애 발생 시 연속 5회 5xx → 5분간 해당 Pod 트래픽 제외
+14. 장애 발생 시 연속 5회 5xx → 5분간 해당 Pod 트래픽 제외
     
-2. 운영팀 알림 및 초기 대응(로그 분석, 조치)
+15. 운영팀 알림 및 초기 대응(로그 분석, 조치)
     
-3. 5분 후 Half-Open 상태 진입, 트래픽 점진 재할당
+16. 5분 후 Half-Open 상태 진입, 트래픽 점진 재할당
     
 
 #### 4.6.3 모니터링 및 알림
@@ -449,11 +453,13 @@ spec:
 
 - 주의할 사항
 
-  - Istio Ingress Gateway 를 통해 요청을 받으면 VirtualService를 통해 라우팅
+	- Istio Ingress Gateway 를 통해 요청을 받으면 VirtualService를 통해 라우팅
+	
+	- Ingress Gateway를 통하지 않고, 클러스터 내부에서 요청을 처리하는 경우, VirtualService를 통해 라우팅하지 않음
+	
+	- 즉, http://localhost:9000/a/b/c/hello 와 같은 Gateway Server로 요청을 보낼 경우, Mirroring이 적용되지 않음
 
-  - Ingress Gateway를 통하지 않고, 클러스터 내부에서 요청을 처리하는 경우, VirtualService를 통해 라우팅하지 않음
-
-  - 즉, http://localhost:9000/a/b/c/hello 와 같은 Gateway Server로 요청을 보낼 경우, Mirroring이 적용되지 않음
+![[Pasted image 20250416161719.png]]
 
 ## 6. 알림 테스트
 
@@ -579,14 +585,14 @@ spec:
 ./3-test-alerting.sh
 ```
 
-1. AlertManager 설정 적용 및 재배포
+17. AlertManager 설정 적용 및 재배포
 
 ```bash
    kubectl apply -f manifests/egov-monitoring/alertmanager-config.yaml
    kubectl rollout restart deployment alertmanager -n egov-monitoring
 ```    
 
-2. AlertManager와 Prometheus 상태 확인
+18. AlertManager와 Prometheus 상태 확인
 
    ```bash
    # 로그 확인
@@ -602,7 +608,7 @@ spec:
    curl -s http://localhost:9093/-/healthy
    ```
 	
-3. 테스트 알림 전송 (예: `curl -H "Content-Type: application/json" -d '[ ... ]' http://localhost:9093/api/v1/alerts`)
+19. 테스트 알림 전송 (예: `curl -H "Content-Type: application/json" -d '[ ... ]' http://localhost:9093/api/v1/alerts`)
 
    ```bash
    curl -H "Content-Type: application/json" -d '[{
@@ -618,7 +624,7 @@ spec:
    }]' http://localhost:9093/api/v1/alerts
    ```
     
-4. AlertManager UI 및 Slack 채널에서 알림 도착 여부 확인
+20. AlertManager UI 및 Slack 채널에서 알림 도착 여부 확인
 
    ```bash
    kubectl port-forward svc/alertmanager -n egov-monitoring 9093:9093
@@ -631,7 +637,7 @@ spec:
 ./4-test-alert-notification.sh
 ```
 
-1. Circuit Breaker Alert Rule 적용
+21. Circuit Breaker Alert Rule 적용
    ```bash
    kubectl apply -f manifests/egov-monitoring/circuit-breaker-alerts-configmap.yaml
    kubectl rollout restart deployment prometheus -n egov-monitoring
@@ -643,7 +649,7 @@ spec:
    kubectl get configmap prometheus-rules -n egov-monitoring -o yaml
    ```
     
-2. 에러 트래픽 발생(예: 20회 연속 요청)
+22. 에러 트래픽 발생(예: 20회 연속 요청)
   ```bash
   # 에러 요청 생성
   for i in {1..20}; do 
@@ -654,7 +660,7 @@ spec:
   done
   ```
     
-3. AlertManager 로그 및 UI 확인
+23. AlertManager 로그 및 UI 확인
 
   ```bash
   # AlertManager 가 정상적으로 작동하는지 로그 확인
@@ -665,7 +671,7 @@ spec:
   http://localhost:9093/#/alerts
   ```
     
-4. Slack 채널 알림 도착 확인
+24. Slack 채널 알림 도착 확인
     
 
 ### 6.4 알림 설정 가이드

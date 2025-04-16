@@ -81,6 +81,13 @@ test_endpoint "http://localhost:9000/a/b/c/hello" 4
 echo -e "\n${YELLOW}Testing Istio Ingress Gateway NodePort 32314:${NC}"
 test_endpoint "http://localhost:32314/a/b/c/hello" 4
 
+# 3. 각 Pod의 최근 로그 확인
+echo -e "\n${GREEN}Recent logs from all pods:${NC}"
+kubectl get pods -n egov-app -l app=egov-hello -o name | while read pod; do
+    echo -e "\n${YELLOW}Logs from $pod:${NC}"
+    kubectl logs $pod -n egov-app --tail=20
+done
+
 # 결과 요약
 echo -e "\n${GREEN}Test Summary:${NC}"
 echo -e "1. Istio Ingress Gateway: NodePort HTTP(80:$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}'))"
