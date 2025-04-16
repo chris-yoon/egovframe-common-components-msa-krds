@@ -90,14 +90,31 @@ echo "# 사전 조건 확인"
 echo "kubectl get pods -n egov-monitoring -l app=alertmanager"
 echo "kubectl get pods -n egov-monitoring -l app.kubernetes.io/name=prometheus"
 
-echo -e "\n# egov-hello Deployment 삭제"
-echo "kubectl delete deployment egov-hello -n egov-app"
+echo -e "\n# Circuit Breaker 테스트를 위한 Destination Rule 설정"
+echo "# manifests/egov-app/destination-rules.yaml 파일을 다음과 같이 수정하세요:"
+echo 'apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: egov-hello
+  namespace: egov-app
+spec:
+  host: egov-hello
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    outlierDetection:
+      interval: 3s           # 더 긴 간격으로 검사
+      consecutive5xxErrors: 5  # 더 많은 오류 허용
+      baseEjectionTime: 30s   # 짧은 ejection 시간
+      maxEjectionPercent: 50  # 절반만 ejection'
 
-echo -e "\n# Destination Rules 삭제"
-echo "kubectl delete -f ../../../manifests/egov-app/destination-rules.yaml"
+echo -e "\n# 수정된 Destination Rule 적용"
+echo "kubectl apply -f ../../../manifests/egov-app/destination-rules.yaml"
 
 echo -e "\n# AlertManager 포트포워딩"
 echo "kubectl port-forward svc/alertmanager -n egov-monitoring 9093:9093"
+
+echo -e "\n# 테스트 완료 후 destination-rules.yaml 파일을 원래 설정으로 복원하세요"
 
 echo -e "\n테스트 결과 확인 방법:"
 echo "1. AlertManager UI 확인"
