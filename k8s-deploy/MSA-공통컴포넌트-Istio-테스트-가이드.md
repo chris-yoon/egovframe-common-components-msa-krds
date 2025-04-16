@@ -362,6 +362,10 @@ fault:
 ```
 
 - 모든 요청에 대해 5초 지연 발생
+
+- 지연에 따른 시스템의 대응 능력 및 타임아웃 설정 등을 점검 가능
+
+- 실제 운영 환경에서는 이런 장애가 자연스럽게 발생할 수 있기 때문에 미리 Timeout 장애 대응 매커니즘을 검증
     
 
 #### 5.2.2 Abort Injection
@@ -375,6 +379,8 @@ fault:
 ```
 
 - 모든 요청에 대해 500 에러 반환
+
+- 강제로 500 오류를 발생시키는 장애 상황을 시뮬레이션
     
 
 #### 5.2.3 혼합 설정
@@ -394,6 +400,8 @@ fault:
 - 50%는 5초 지연, 나머지 50%는 500 에러 발생
     
 - 시스템의 지연/장애 상황 대처 능력 및 서킷브레이커, 타임아웃 설정 등을 점검 가능
+
+- 일부 요청은 느려지고, 일부 요청은 오류가 발생하는 복합적인 장애 상황을 재현
     
 
 ### 5.3 Mirroring
@@ -461,6 +469,43 @@ spec:
 
 ![[Pasted image 20250416161719.png]]
 
+### 5.4 Canary Release
+
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: egov-hello
+  namespace: egov-app
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - istio-system/istio-ingressgateway
+  http:
+  - match:
+    - uri:
+        prefix: /a/b/c/hello
+    route:
+    - destination:
+        host: egov-hello
+        subset: v1
+        port:
+          number: 80
+      weight: 90
+    - destination:
+        host: egov-hello
+        subset: v2
+        port:
+          number: 80
+      percent: 10
+```
+
+- 90%는 v1, 10%는 v2로 트래픽 분배
+
+- Canary Release를 통해 새로운 버전의 서비스를 점진적으로 배포 가능
+
+
 ## 6. 알림 테스트
 
 ### 6.1 알림 구성 요소
@@ -469,7 +514,7 @@ spec:
     
     - Slack 등 외부 알림 연동 설정
         
-    - route (라우팅)
+    - route (라우팅)
 
 		- `group_by, group_wait, group_interval, repeat_interval`등을 통해 알림이 묶여서 보내진다.
 	
