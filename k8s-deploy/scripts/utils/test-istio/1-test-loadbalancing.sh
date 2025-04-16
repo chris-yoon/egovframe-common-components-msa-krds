@@ -39,7 +39,7 @@ test_endpoint() {
     echo -e "${YELLOW}Testing endpoint: $url${NC}"
     for i in $(seq 1 $attempts); do
         echo -e "${YELLOW}Request $i:${NC}"
-        curl -v $url
+        curl -s $url
         echo
     done
 }
@@ -75,16 +75,23 @@ echo -e "\n${GREEN}6. Testing External Access${NC}"
 
 # 7. Gateway Server로 테스트
 echo -e "\n${YELLOW}Testing Gateway Server Port 9000:${NC}"
-test_endpoint "http://localhost:9000/a/b/c/hello" 2
+test_endpoint "http://localhost:9000/a/b/c/hello" 4
 
-# NodePort 테스트
-echo -e "\n${YELLOW}Testing Istio Ingress GatewayNodePort 32314:${NC}"
-test_endpoint "http://localhost:32314/a/b/c/hello" 2
+# Istio Ingress Gateway NodePort 테스트
+echo -e "\n${YELLOW}Testing Istio Ingress Gateway NodePort 32314:${NC}"
+test_endpoint "http://localhost:32314/a/b/c/hello" 4
 
 # 결과 요약
 echo -e "\n${GREEN}Test Summary:${NC}"
 echo -e "1. Istio Ingress Gateway: NodePort HTTP(80:$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}'))"
 echo -e "2. Virtual Services: $(kubectl get virtualservice -n egov-app -o jsonpath='{.items[*].metadata.name}')"
-echo -e "3. egov-hello Pods: $(kubectl get pods -n egov-app -l app=egov-hello -o jsonpath='{.items[*].status.phase}' | tr ' ' ',')"
+echo -e "3. Istio Ingress Gateway 뿐 아니라 Gateway Server도 Destination Rule를 통해 로드밸런싱이 적용됩니다."
+
+echo -e "\n${YELLOW}로드밸런싱 상세 확인 방법:${NC}"
+echo -e "1. Kiali UI (http://localhost:30001)"
+echo -e "   - Services > egov-hello > Endpoints 확인"
+echo -e "2. Jaeger UI (http://localhost:30002)"
+echo -e "   - Operation "egov-hello.egov-app:80" 로 검색"
+echo -e "   -  각 Trace 의 Span Attributes의 net.sock.host.addr 값 확인"
 
 exit 0

@@ -16,7 +16,7 @@ check_deployment() {
     echo -e "${YELLOW}Waiting for deployment $deployment to be ready...${NC}"
     while [ $attempt -le $max_attempts ]; do
         local ready=$(kubectl get deployment $deployment -n $namespace -o jsonpath='{.status.readyReplicas}')
-        if [ "$ready" == "2" ]; then
+        if [ "$ready" == "1" ]; then
             echo -e "${GREEN}Deployment $deployment is ready${NC}"
             return 0
         fi
@@ -60,12 +60,6 @@ test_endpoint() {
 # 메인 테스트 시작
 echo -e "${GREEN}Starting Circuit Breaking Test...${NC}"
 
-# 0. egov-hello Deployment 실행확인 
-echo -e "\n${GREEN}0. Checking egov-hello Deployment${NC}"
-kubectl apply -f ../../../manifests/egov-app/egov-hello-deployment.yaml
-sleep 20
-check_deployment "egov-app" "egov-hello"
-
 # 1. Error Deployment 적용
 echo -e "\n${GREEN}1. Applying Error Deployment${NC}"
 kubectl apply -f ../../../manifests/egov-app/egov-hello-error-deployment.yaml
@@ -98,19 +92,19 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 5. 초기 상태 NodePort 테스트 (12회 요청)
+# 5. 초기 상태 NodePort 테스트 (20회 요청)
 echo -e "\n${GREEN}5. Initial Test (Ingress Gateway NodePort) - Expect mix of success and errors${NC}"
-test_endpoint "http://localhost:32314/a/b/c/hello" 12 1
-
-# 6. Circuit Breaker 동작 테스트 (빠른 요청 20회)
-echo -e "\n${GREEN}6. Circuit Breaker Test - Circuit Open - Rapid requests, expect mostly successes${NC}"
 test_endpoint "http://localhost:32314/a/b/c/hello" 20 0.5
 
-# 7. Circuit 다시 Closed 상태 확인 (30초 후 12회 요청)
-echo -e "\n${GREEN}7. Waiting 30 seconds for circuit to potentially close again...${NC}"
-sleep 30
+# 6. Circuit Breaker 동작 테스트 (빠른 요청 40회)
+echo -e "\n${GREEN}6. Circuit Breaker Test - Circuit Open - Rapid requests, expect mostly successes${NC}"
+test_endpoint "http://localhost:32314/a/b/c/hello" 40 0.5
+
+# 7. Circuit 다시 Closed 상태 확인 (60초 후 20회 요청)
+echo -e "\n${GREEN}7. Waiting 1 minute for circuit to potentially close again...${NC}"
+sleep 60
 echo -e "\n${GREEN}Testing after wait - Expect mix of success and errors${NC}"
-test_endpoint "http://localhost:32314/a/b/c/hello" 12 1
+test_endpoint "http://localhost:32314/a/b/c/hello" 20 0.5
 
 # 11. 상태 출력
 echo -e "\n${GREEN}8. Current System Status${NC}"

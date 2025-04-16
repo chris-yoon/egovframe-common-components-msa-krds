@@ -22,33 +22,20 @@ check_prerequisites() {
         return 1
     fi
     
+    # egov-hello-error 상태 확인
+    if ! kubectl get deployment egov-hello-error -n egov-app >/dev/null 2>&1; then
+        echo -e "${RED}egov-hello-error deployment not found${NC}"
+        return 1
+    fi
+    
     echo -e "${GREEN}All prerequisites are met${NC}"
     return 0
 }
 
-# 함수: egov-hello 배포 삭제 (Deployment만 삭제, Service는 유지)
-# 목적: egov-hello-error만 남겨 둘 수 있도록하여 의도적으로 에러를 발생시킬 수 있도록 하기 위함
-delete_deployment_egov_hello() {
-    echo -e "${YELLOW}Deleting egov-hello deployment...${NC}"
-    kubectl delete deployment egov-hello -n egov-app || true
-    echo -e "${GREEN}egov-hello deployment deleted${NC}"
-    sleep 5
-}
-
-# 함수: destination rules 삭제
-# 목적: Circuit Breaker를 비활성화
-delete_destination_rules() {
-    echo -e "${YELLOW}Deleting destination rules...${NC}"
-    kubectl delete -f ../../../manifests/egov-app/destination-rules.yaml || true
-    echo -e "${GREEN}Destination rules deleted${NC}"
-    sleep 5
-}
-
 # 함수: 에러 요청 생성
-# 목적: egov-hello-error를 통해 에러를 발생시킴
 generate_error_requests() {
     local url="http://localhost:32314/a/b/c/hello"
-    local count=20  # 충분한 에러를 발생시키기 위해 15회로 설정
+    local count=30  # 충분한 에러를 발생시키기 위해 30회로 설정
     local errors=0
     
     echo -e "\n${YELLOW}Generating $count requests to trigger circuit breaker...${NC}"
@@ -67,7 +54,7 @@ generate_error_requests() {
             echo -e "${GREEN}Success response (HTTP $http_code)${NC}"
             echo -e "${GREEN}Response: $content${NC}"
         fi
-        sleep 0.5  # 2초 간격으로 요청
+        sleep 1  # 1초 간격으로 요청
     done
     
     echo -e "\n${YELLOW}Error generation summary:${NC}"
@@ -78,11 +65,10 @@ generate_error_requests() {
 # 함수: 알림 상태 확인
 check_alerts() {
     echo -e "${YELLOW}Checking alerts in AlertManager...${NC}"
-    # AlertManager API를 통해 알림 상태 확인
     curl -s http://localhost:9093/api/v1/alerts | jq .
 }
 
-# AlertManager 연결 테스트 함수 추가
+# AlertManager 연결 테스트 함수
 check_alertmanager_connection() {
     echo -e "${YELLOW}Testing AlertManager connection...${NC}"
     response=$(curl -s -w "\n%{http_code}" http://localhost:9093/-/healthy)
@@ -97,6 +83,54 @@ check_alertmanager_connection() {
     fi
 }
 
+# 함수: Destination Rule 설정 변경
+update_destination_rule() {
+    echo -e "${YELLOW}Updating Destination Rule for testing...${NC}"
+    
+    # 임시 파일 생성
+    cat << EOF > /tmp/destination-rule-test.yaml
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: egov-hello
+  namespace: egov-app
+spec:
+  host: egov-hello
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    outlierDetection:
+      interval: 3s           # 더 긴 간격으로 검사
+      consecutive5xxErrors: 5  # 더 많은 오류 허용
+      baseEjectionTime: 30s   # 짧은 ejection 시간
+      maxEjectionPercent: 50  # 절반만 ejection
+EOF
+
+    # Destination Rule 적용
+    kubectl apply -f /tmp/destination-rule-test.yaml
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Destination Rule updated successfully${NC}"
+    else
+        echo -e "${RED}Failed to update Destination Rule${NC}"
+        return 1
+    fi
+
+    # 임시 파일 삭제
+    rm /tmp/destination-rule-test.yaml
+}
+
+# 함수: 원래 Destination Rule 복원
+restore_destination_rule() {
+    echo -e "${YELLOW}Restoring original Destination Rule...${NC}"
+    kubectl apply -f ../../../manifests/egov-app/destination-rules.yaml
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Original Destination Rule restored successfully${NC}"
+    else
+        echo -e "${RED}Failed to restore original Destination Rule${NC}"
+        return 1
+    fi
+}
+
 # 메인 스크립트 시작
 echo -e "${GREEN}Starting Alert Notification Test...${NC}"
 
@@ -104,46 +138,47 @@ echo -e "${GREEN}Starting Alert Notification Test...${NC}"
 echo -e "\n${GREEN}1. Checking Prerequisites${NC}"
 check_prerequisites || exit 1
 
-# 2. 기존 포트포워딩 정리
-echo -e "\n${GREEN}2. Cleaning up existing port-forwards${NC}"
+# 2. Destination Rule 설정 변경
+echo -e "\n${GREEN}2. Updating Destination Rule Configuration${NC}"
+update_destination_rule || exit 1
+
+# 3. 기존 포트포워딩 정리
+echo -e "\n${GREEN}3. Cleaning up existing port-forwards${NC}"
 pkill -f "port-forward.*alertmanager" || true
 sleep 2
 
-# 3. 필요한 포트포워딩 설정
-echo -e "\n${GREEN}3. Setting up port-forwards${NC}"
+# 4. 필요한 포트포워딩 설정
+echo -e "\n${GREEN}4. Setting up port-forwards${NC}"
 kubectl port-forward svc/alertmanager -n egov-monitoring 9093:9093 &
 sleep 5
 check_alertmanager_connection || exit 1
 
-# 4. Destination Rules 삭제
-echo -e "\n${GREEN}4. Removing Destination Rules${NC}"
-delete_destination_rules
-
-# 5. egov-hello 배포 삭제
-echo -e "\n${GREEN}5. Removing egov-hello deployment${NC}"
-delete_deployment_egov_hello
-
-# 6. 현재 알림 상태 확인
-echo -e "\n${GREEN}6. Checking current alert status${NC}"
+# 5. 현재 알림 상태 확인
+echo -e "\n${GREEN}5. Checking current alert status${NC}"
 check_alerts
 
-# 7. 에러 요청 생성 (더 많은 요청 생성)
-echo -e "\n${GREEN}7. Generating error requests${NC}"
+# 6. 에러 요청 생성 (3회 반복)
+echo -e "\n${GREEN}6. Generating error requests${NC}"
 for i in {1..3}; do
+    echo -e "\n${YELLOW}Test iteration $i of 3${NC}"
     generate_error_requests
-    sleep 1
+    sleep 5
 done
 
-# 8. 알림 발생 대기
-echo -e "\n${GREEN}8. Waiting for alerts to be generated...${NC}"
+# 7. 알림 발생 대기
+echo -e "\n${GREEN}7. Waiting for alerts to be generated...${NC}"
 echo -e "${YELLOW}   - Prometheus rule evaluation: ~10s${NC}"
 echo -e "${YELLOW}   - AlertManager grouping: ~10s${NC}"
 echo -e "${YELLOW}   - Alert notification delay: ~10s${NC}"
 sleep 30
 
-# 9. 알림 상태 재확인
-echo -e "\n${GREEN}9. Checking final alert status${NC}"
+# 8. 알림 상태 재확인
+echo -e "\n${GREEN}8. Checking final alert status${NC}"
 check_alerts
+
+# 9. 원래 Destination Rule 복원
+echo -e "\n${GREEN}9. Restoring original configuration${NC}"
+restore_destination_rule
 
 # 10. 정리
 echo -e "\n${GREEN}10. Cleanup${NC}"

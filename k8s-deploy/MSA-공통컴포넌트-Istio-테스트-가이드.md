@@ -1,27 +1,39 @@
 # MSA 공통컴포넌트 Istio 테스트 가이드
 
+이 문서에서는 전자정부 표준프레임워크 MSA 공통컴포넌트 환경에서 Istio를 활용한 서비스 메시 기능의 테스트 방법을 안내합니다. Istio 구성 요소, 트래픽 관리, 서킷브레이커, 알림 설정 등을 순차적으로 다루며, 실제 테스트 시 사용할 예시 스크립트와 리소스도 설명합니다.
+
 ## 1. 개요
 
-이 문서는 전자정부 MSA 공통컴포넌트의 Istio 서비스 메시 기능을 테스트하는 방법을 설명합니다.
-
 ### 1.1 테스트 환경
+
 - Kubernetes 클러스터
+    
 - Istio 1.25.0
-- egov-hello 서비스 (테스트용 샘플 서비스)
+    
+- 샘플 애플리케이션: egov-hello (테스트용)
+    
 
 ### 1.2 테스트 시나리오
+
 1. 로드밸런싱
+    
 2. 서킷브레이커
-3. 트래픽 관리
+    
+3. 트래픽 관리 (Fault Injection, Mirroring 등)
+    
+4. 모니터링 및 알림 설정
+    
 
 ## 2. 사전 준비
 
-### 2.1 Istio 설치 확인
+### 2.1 Istio 설치 및 실행 확인
+
 ```bash
 kubectl get pods -n istio-system
 ```
 
-예상 출력:
+위 명령어 실행 시, 다음과 유사한 결과가 확인되어야 합니다.
+
 ```
 NAME                                    READY   STATUS    RESTARTS   AGE
 istio-ingressgateway-f45dd4788-2npn8   1/1     Running   0          24h
@@ -29,199 +41,190 @@ istiod-64989f484c-48r9z                1/1     Running   0          24h
 ```
 
 ### 2.2 테스트 스크립트 준비
+
 ```bash
 cd k8s-deploy/scripts/utils/test-istio
 chmod +x *.sh
 ```
 
+- 테스트에 필요한 스크립트를 실행 권한으로 변경합니다.
+    
+
 ## 3. 로드밸런싱 테스트
 
-### 3.1 테스트 설정
-로드밸런싱 테스트는 다음 구성요소를 사용합니다:
+### 3.1 테스트 구성 요소
 
-1. Gateway Service (`manifests/istio-system/gateway-service.yaml`)
-   - Istio Ingress Gateway를 위한 Kubernetes Service 정의
-   - NodePort 타입으로 외부 접근 허용 (포트 32314)
-   - HTTP/2 프로토콜 지원
-   ```yaml
-   apiVersion: v1
-   kind: Service
-   metadata:
-     name: istio-ingressgateway
-     namespace: istio-system
-   spec:
-     type: NodePort
-     selector:
-       istio: ingressgateway
-     ports:
-       - name: http2
-         port: 80
-         targetPort: 8080
-         nodePort: 32314
-   ```
+- **Gateway Service** (`manifests/istio-system/gateway-service.yaml`)
+    
+    - Istio Ingress Gateway를 위한 Kubernetes Service
+        
+    - NodePort 타입(포트 32314)으로 외부 트래픽 수용
+        
+    - HTTP/2 프로토콜을 위한 port 설정
+        
+    
+    ```yaml
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: istio-ingressgateway
+      namespace: istio-system
+    spec:
+      type: NodePort
+      selector:
+        istio: ingressgateway
+      ports:
+        - name: http2
+          port: 80
+          targetPort: 8080
+          nodePort: 32314
+    ```
+    
+- **Virtual Service** (`manifests/egov-app/virtual-services.yaml`)
+    
+    - URI 기반 라우팅 설정(/a/b/c/hello)
+        
+    - Gateway와 연동
+        
+    
+    ```yaml
+    apiVersion: networking.istio.io/v1beta1
+    kind: VirtualService
+    metadata:
+      name: egov-hello
+      namespace: egov-app
+    spec:
+      hosts:
+      - "*"
+      gateways:
+      - istio-system/istio-ingressgateway
+      http:
+      - match:
+        - uri:
+            prefix: /a/b/c/hello
+        route:
+        - destination:
+            host: egov-hello
+            port:
+              number: 80
+    ```
+    
+- **Destination Rule** (`manifests/egov-app/destination-rules.yaml`)
+    
+    - 로드밸런싱 정책(ROUND_ROBIN) 및 Circuit Breaker 설정
+        
+    - 트래픽 정책 정의
+        
+    
+    ```yaml
+    apiVersion: networking.istio.io/v1beta1
+    kind: DestinationRule
+    metadata:
+      name: egov-hello
+      namespace: egov-app
+    spec:
+      host: egov-hello
+      trafficPolicy:
+        loadBalancer:
+          simple: ROUND_ROBIN
+        outlierDetection:
+          interval: 1s
+          consecutive5xxErrors: 3
+          baseEjectionTime: 30s
+          maxEjectionPercent: 100
+    ```
+    
 
-2. Virtual Service (`manifests/egov-app/virtual-services.yaml`)
-   - 트래픽 라우팅 규칙 정의
-   - URI 기반 라우팅 (/a/b/c/hello)
-   - 게이트웨이 연결 설정
-   ```yaml
-   apiVersion: networking.istio.io/v1beta1
-   kind: VirtualService
-   metadata:
-     name: egov-hello
-     namespace: egov-app
-   spec:
-     hosts:
-     - "*"
-     gateways:
-     - istio-system/istio-ingressgateway
-     http:
-     - match:
-       - uri:
-           prefix: /a/b/c/hello
-       route:
-       - destination:
-           host: egov-hello
-           port:
-             number: 80
-   ```
+이 구성으로 다음을 실현합니다:
 
-3. Destination Rule (`manifests/egov-app/destination-rules.yaml`)
-   - 로드밸런싱 정책 설정
-   - Circuit Breaker 설정
-   - 트래픽 정책 정의
-   ```yaml
-   apiVersion: networking.istio.io/v1beta1
-   kind: DestinationRule
-   metadata:
-     name: egov-hello
-     namespace: egov-app
-   spec:
-     host: egov-hello
-     trafficPolicy:
-       loadBalancer:
-         simple: ROUND_ROBIN    # 라운드 로빈 방식의 로드밸런싱
-       outlierDetection:        # Circuit Breaking 설정
-         interval: 1s           # 장애 감지 주기
-         consecutive5xxErrors: 3 # 연속 오류 허용 횟수
-         baseEjectionTime: 30s  # 서비스 제외 시간
-         maxEjectionPercent: 100 # 최대 제외 비율
-   ```
-
-이러한 구성요소들이 함께 작동하여:
-- 외부에서 서비스 접근 가능 (Gateway Service)
-- 트래픽을 적절한 서비스로 라우팅 (Virtual Service)
-- 부하 분산 및 장애 대응 (Destination Rule)
+1. 외부 접속을 위한 게이트웨이 서비스
+    
+2. URI 기반 라우팅(egov-hello)
+    
+3. 라운드 로빈 로드밸런싱 및 장애 감지(Circuit Breaker)
+    
 
 ### 3.2 테스트 실행
+
 ```bash
 ./1-test-loadbalancing.sh
 ```
 
-### 3.3 테스트 시나리오
-1. Gateway Service 설정 적용
-2. Istio Ingress Gateway 상태 확인
-3. Virtual Service 상태 확인
-4. egov-hello 서비스 및 파드 상태 확인
-5. 라우팅 설정 확인
+### 3.3 테스트 확인 사항
 
-### 3.4 결과 확인
-- 요청이 여러 파드에 균등하게 분산되는지 확인
-- 응답 시간과 성공률 모니터링
+1. Gateway Service가 정상 배포되었는지 확인
+    
+2. Istio Ingress Gateway의 동작 여부 확인
+    
+3. Virtual Service 설정 확인
+    
+4. egov-hello 애플리케이션 Pod 상태 확인
+    
+5. 트래픽 라우팅이 정상 동작하며, 요청이 여러 Pod에 분산되는지 확인
+    
+
+### 3.4 결과 분석
+
+- **Kiali** UI에서 서비스 엔드포인트 및 로드밸런싱 확인
+    
+- **Jaeger** UI에서 트레이스 및 Spans 분석
+    
+    - 예: `net.sock.host.addr` 필드를 확인하여 요청이 분산되었는지 확인
+        
 
 ## 4. 서킷브레이커 테스트
 
-### 4.1 테스트 설정
-서킷브레이커 테스트는 다음 구성요소를 사용합니다:
+### 4.1 테스트 구성 요소
 
-1. EgovHello Error Deployment (`manifests/egov-app/egov-hello-error-deployment.yaml`)
-   - 강제로 오류를 발생시키는 테스트용 deployment
-   - `FORCE_ERROR: "true"` 환경변수 설정으로 500 에러 발생
-   ```yaml
-   spec:
-     template:
-       spec:
-         containers:
-         - name: egov-hello
-           env:
-           - name: FORCE_ERROR
-             value: "true"
-   ```
-
-   관련 코드 (`EgovHello/src/main/java/egovframework/com/hello/web/HelloController.java`):
-   ```java
-   @RestController
-   @RequestMapping("/a/b/c")
-   public class HelloController {
-       @Value("${FORCE_ERROR:false}")
-       private boolean forceError;
-       
-       @GetMapping("/hello")
-       public String hello() {
-           if (forceError) {
-               throw new ResponseStatusException(
-                   HttpStatus.INTERNAL_SERVER_ERROR, 
-                   "Forced error"
-               );
-           }
-           return "Hello from EgovFramework!";
-       }
-   }
-   ```
-
-   이 설정으로:
-   - 정상 deployment (2개 Pod)는 성공 응답 반환
-   - Error deployment (1개 Pod)는 항상 500 에러 반환
-   - 총 3개의 Pod 중 1개가 항상 실패하는 상황 시뮬레이션
-
-2. Destination Rule with Circuit Breaker (`manifests/egov-app/destination-rules.yaml`)
+- **EgovHello Error Deployment** (`manifests/egov-app/egov-hello-error-deployment.yaml`)
+    
+    - Pod 내 `FORCE_ERROR: "true"` 설정으로 500 오류를 강제로 발생
+        
+    - 총 3개 Pod 구성 중 1개 Pod는 항상 에러 반환
+        
+    
+    ```yaml
+    spec:
+      template:
+        spec:
+          containers:
+          - name: egov-hello
+            env:
+            - name: FORCE_ERROR
+              value: "true"
+    ```
+    
+- **서킷브레이커가 포함된 Destination Rule** (`manifests/egov-app/destination-rules.yaml`)
+    
+    - Outlier Detection을 통해 특정 Pod에서 연속 5xx 오류가 일정 횟수(3회) 이상 발생하면 30초 동안 트래픽 제외
+        
 
 ### 4.2 테스트 실행
+
 ```bash
 ./2-test-circuitbreaking.sh
 ```
 
 ### 4.3 Ingress Gateway 테스트 시나리오
 
-Istio Ingress Gateway -> EgovHello 서비스 요청을 테스트합니다
-Istio Ingress Gateway NodePort (32314) 확인
-```bash
-kubectl get svc istio-ingressgateway -n istio-system
-```
+1. Ingress Gateway (NodePort 32314) 확인
+    
+2. EgovHello Error Deployment 적용
+    
+3. Destination Rule(서킷브레이커) 적용
+    
+4. 에러를 발생시키는 Pod와 정상 Pod 간 요청 분배 확인
+    
+5. Circuit Breaker 동작 후, 일정 시간(30초) 지난 뒤 Pod가 다시 트래픽에 포함되는지 확인
+    
 
-1. EgovHello Error Deployment 적용
-2. Destination Rule 적용
-3. 초기 상태 테스트 (12회 요청 http://localhost:32314/a/b/c/hello) - 성공과 실패가 혼합되어야 함. 정상 POD 2개, Error POD 1개, 에러 3번 발생
-4. Circuit Breaker 동작 테스트 (빠른 요청 20회) - Circuit 이 Open 되어 대부분 성공해야 함
-5. Circuit 다시 Closed 상태 확인 (30초 후 12회 요청) - 다시 Circuit 이 Closed 되어 성공과 실패가 혼합되어야 함
+### 4.4 Gateway Server를 통한 테스트
 
-### 4.4 Gateway Server 테스트
-Gateway Server를 통한 테스트는 Istio의 Circuit Breaker가 Gateway Server의 트래픽에도 적용되는지 확인하는 단계입니다.
+- **Gateway Server**가 Istio 환경 내부에서 요청을 처리할 때도 동일한 서킷브레이커 정책 적용
+    
+- 예: `curl -s http://localhost:9000/a/b/c/hello` 20회 반복 요청
+    
 
-#### 4.4.1 Circuit Breaker 구성
-Gateway Server의 요청도 동일한 Istio Destination Rule의 영향을 받습니다:
-
-```yaml
-apiVersion: networking.istio.io/v1beta1
-kind: DestinationRule
-metadata:
-  name: egov-hello
-  namespace: egov-app
-spec:
-  host: egov-hello
-  trafficPolicy:
-    loadBalancer:
-      simple: ROUND_ROBIN
-    outlierDetection:
-      interval: 1s
-      consecutive5xxErrors: 3
-      baseEjectionTime: 30s
-      maxEjectionPercent: 100
-```
-
-이 설정은 Gateway Server -> EgovHello 서비스 간의 통신에도 동일하게 적용됩니다.
-
-#### 4.4.2 테스트 실행 및 결과 분석
 ```bash
 # Gateway Server 엔드포인트 테스트
 for i in {1..20}; do
@@ -232,25 +235,30 @@ for i in {1..20}; do
 done
 ```
 
-예상되는 결과:
-1. Gateway Server를 통한 요청도 Istio Circuit Breaker의 보호를 받음
-2. Error POD로 인한 오류 발생 시 해당 POD가 Circuit Breaker에 의해 제외됨 (연속 오류 3회 이후 30초 동안 제외)
-3. 정상 POD들로만 트래픽이 전달되어 안정적인 서비스 제공
+#### 4.4.1 모니터링 및 분석
 
-#### 4.4.3 모니터링 및 분석
-Istio의 Circuit Breaker 동작을 다음 명령어로 확인할 수 있습니다:
-```bash
-# Circuit Breaker 상태 확인
-kubectl get destinationrule -n egov-app egov-hello -o yaml
-
-# Envoy 설정 확인
-istioctl proxy-config cluster deploy/gateway-server -n egov-infra
-
-# 서비스 매쉬 시각화 (Kiali)
-kubectl port-forward svc/kiali -n istio-system 20001:20001
-```
+- **Destination Rule** 상태 확인:
+    
+    ```bash
+    kubectl get destinationrule -n egov-app egov-hello -o yaml
+    ```
+    
+- **Envoy 설정** 확인:
+    
+    ```bash
+    istioctl proxy-config cluster deploy/gateway-server -n egov-infra
+    ```
+    
+- **Kiali UI**에서 Circuit Breaker 그래프 시각화
+    
 
 ### 4.5 결과 확인
+
+- **Istio Proxy 로그** (Gateway Server, egov-hello)
+    
+- **애플리케이션 로그** (egov-hello 컨테이너)
+
+
 ```bash
 # Istio Proxy 로그 확인 (Gateway Server)
 kubectl logs -l app=gateway-server -c istio-proxy -n egov-infra
@@ -262,96 +270,58 @@ kubectl logs -l app=egov-hello -c istio-proxy -n egov-app
 kubectl logs -l app=egov-hello -c egov-hello -n egov-app
 ```
 
-### 4.6 Production 환경 Circuit Breaker 설정 가이드
 
-#### 4.6.1 테스트 환경과 운영 환경의 차이점
-현재 테스트 설정:
+- Kiali UI에서 Istio Circuit Breaker 동작을 시각적으로 확인
+    
+	- **Services > egov-hello** 화면에서 모니터링 주기를 10초(Every 10s)로 설정하면, 에러율에 따라 색상이 변경
+	    
+	- 에러가 많을 때는 빨간색, 에러율이 낮아지면 노란색, 서킷브레이커가 활성화(Open)되면 녹색으로 표시
+	    
+	- 서킷브레이커가 Open된 상태에서는 문제가 있는 Pod(예: egov-hello-error)가 트래픽에서 제외되고, Closed되면 다시 트래픽에 포함되어 에러가 발생
+	    
+	- 운영 환경에서는 Circuit이 Open될 정도로 에러가 발생하면, 원인 분석과 조치가 필수
+
+
+### 4.6 운영 환경 서킷브레이커 설정 가이드
+
+#### 4.6.1 테스트 vs 운영 환경 차이
+
+- 테스트 설정(짧은 간격, 빠른 감지)
+    
+- 운영 환경(복구 시간 고려, 안정성 확보)
+    
+
 ```yaml
 outlierDetection:
-  interval: 1s
-  consecutive5xxErrors: 3
-  baseEjectionTime: 30s
-  maxEjectionPercent: 100
+  interval: 10s
+  consecutive5xxErrors: 5
+  baseEjectionTime: 300s
+  maxEjectionPercent: 50
+  minHealthPercent: 60
 ```
 
-이 설정은 테스트 목적으로 빠른 피드백을 위해 설계되었으며, Production에는 적합하지 않습니다.
+#### 4.6.2 설정 근거 및 복구 프로세스
 
-#### 4.6.2 Production 권장 설정
-```yaml
-outlierDetection:
-  interval: 10s                    # 더 긴 간격으로 검사
-  consecutive5xxErrors: 5          # 더 많은 오류 허용
-  baseEjectionTime: 300s          # 5분의 초기 제외 시간
-  maxEjectionPercent: 50          # 최대 50%만 제외하여 안전성 확보
-  minHealthPercent: 60            # 최소 60% 이상의 정상 Pod 유지
-```
+1. 장애 발생 시 연속 5회 5xx → 5분간 해당 Pod 트래픽 제외
+    
+2. 운영팀 알림 및 초기 대응(로그 분석, 조치)
+    
+3. 5분 후 Half-Open 상태 진입, 트래픽 점진 재할당
+    
 
-#### 4.6.3 설정 근거
-1. 장애 복구 시간 고려
-   - 대부분의 장애 복구에는 30초 이상 소요
-   - 자동 복구 스크립트 실행 시간
-   - 로그 수집 및 분석 시간
-   - 운영자의 초기 대응 시간
+#### 4.6.3 모니터링 및 알림
 
-2. 안정성 확보
-   - `maxEjectionPercent: 50`: 항상 절반 이상의 Pod 유지
-   - `minHealthPercent: 60`: 최소 서비스 가용성 보장
-   - 점진적인 장애 복구 가능
-
-3. 오탐 방지
-   - `consecutive5xxErrors: 5`: 일시적 네트워크 오류 무시
-   - `interval: 10s`: 더 안정적인 상태 판단
-
-#### 4.6.4 복구 프로세스
-1. 장애 발생 시 (5회 연속 오류)
-   - 해당 Pod는 5분간 트래픽에서 제외
-   - 모니터링 알림 발생
-   - 운영팀 초기 대응 시작
-
-2. 복구 단계
-   - 로그 분석 및 원인 파악 (1-2분)
-   - 필요한 조치 실행 (2-3분)
-   - 정상 동작 확인 (1분)
-
-3. Circuit 자동 복구
-   - 5분 후 Half-Open 상태로 전환
-   - 점진적으로 트래픽 재개
-   - 완전한 정상 상태 확인
-
-#### 4.6.5 모니터링 및 알림 설정
-```yaml
-# Prometheus Alert 규칙 예시
-groups:
-- name: CircuitBreaker
-  rules:
-  - alert: CircuitBreakerOpen
-    expr: istio_requests_total{response_code=~"5.*"} > 5
-    for: 1m
-    labels:
-      severity: critical
-    annotations:
-      summary: "Circuit Breaker Opened for {{ $labels.service }}"
-```
-
-#### 4.6.6 운영 체크리스트
-1. 정기적인 상태 확인
-   ```bash
-   # Circuit Breaker 상태 확인
-   kubectl get destinationrule -n egov-app -o yaml
-   
-   # Pod 상태 및 분포 확인
-   kubectl get pods -n egov-app -o wide
-   ```
-
-2. 장애 대응 준비
-   - 로그 수집 자동화
-   - 복구 스크립트 준비
-   - 운영자 대응 매뉴얼 구비
+- Prometheus 규칙 설정 예시
+    
+- AlertManager를 통한 Slack 연동
+    
+- 예기치 못한 오류 발생 시 빠른 대응 가능
+    
 
 ## 5. 트래픽 관리
 
 ### 5.1 가중치 기반 라우팅
-Virtual Service에서 가중치 설정:
+
 ```yaml
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
@@ -372,8 +342,58 @@ spec:
       weight: 20
 ```
 
+- v1 버전에 80%, v2 버전에 20% 트래픽 분배
+    
+
 ### 5.2 Fault Injection
-에러 주입 테스트:
+
+#### 5.2.1 Delay Injection
+
+```yaml
+fault:
+  delay:
+    percentage:
+      value: 100
+    fixedDelay: 5s
+```
+
+- 모든 요청에 대해 5초 지연 발생
+    
+
+#### 5.2.2 Abort Injection
+
+```yaml
+fault:
+  abort:
+    percentage:
+      value: 100
+    httpStatus: 500
+```
+
+- 모든 요청에 대해 500 에러 반환
+    
+
+#### 5.2.3 혼합 설정
+
+```yaml
+fault:
+  delay:
+    percentage:
+      value: 50
+    fixedDelay: 5s
+  abort:
+    percentage:
+      value: 50
+    httpStatus: 500
+```
+
+- 50%는 5초 지연, 나머지 50%는 500 에러 발생
+    
+- 시스템의 지연/장애 상황 대처 능력 및 서킷브레이커, 타임아웃 설정 등을 점검 가능
+    
+
+### 5.3 Mirroring
+
 ```yaml
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
@@ -383,23 +403,42 @@ spec:
   hosts:
   - egov-hello
   http:
-  - fault:
-      delay:
-        percentage:
-          value: 100
-        fixedDelay: 5s
-    route:
+  - route:
     - destination:
         host: egov-hello
+        subset: v1
+    mirror:
+      host: egov-hello
+      subset: v2
+    mirrorPercentage:
+      value: 100
 ```
+
+- 실트래픽은 v1으로 전달, 동일 요청을 v2로 “복사” (v2에서 실제 응답은 반환하지 않음)
+    
+- 무중단 테스트나 A/B 테스트 시 활용
+    
 
 ## 6. 알림 테스트
 
-### 6.1 테스트 설정
-알림 테스트는 다음 구성요소를 사용합니다:
+### 6.1 알림 구성 요소
 
-1. AlertManager (`manifests/egov-monitoring/alertmanager-config.yaml`)
-   ```yaml
+- **AlertManager** (`manifests/egov-monitoring/alertmanager-config.yaml`)
+    
+    - Slack 등 외부 알림 연동 설정
+        
+    - route (라우팅)
+
+		- `group_by, group_wait, group_interval, repeat_interval`등을 통해 알림이 묶여서 보내진다.
+	
+		- `severity: critical` 에 해당하는 알림은 receiver 로 전달된다.
+
+	- receivers
+
+		- Slack 채널 `#egovalertmanager`로 alert firing, resolved 모두 메시지가 전송된다.
+
+
+```yaml
    apiVersion: v1
    kind: Secret
    metadata:
@@ -437,10 +476,13 @@ spec:
              *Severity:* {{ .Labels.severity }}
              *Status:* {{ .Status }}
              {{ end }}
-   ```
+```
 
-2. 알림 규칙 (`manifests/egov-monitoring/circuit-breaker-alerts-configmap.yaml`)
-   ```yaml
+
+- **알림 규칙** (`manifests/egov-monitoring/circuit-breaker-alerts-configmap.yaml`)
+
+	
+    ```yaml
    apiVersion: v1
    kind: ConfigMap
    metadata:
@@ -456,20 +498,26 @@ spec:
              sum(increase(istio_requests_total{
                response_code=~"5.*",
                destination_service="egov-hello.egov-app.svc.cluster.local"
-             }[5m])) by (destination_service) > 0
+             }[5m])) by (destination_service) > 3
            for: 10s
            labels:
              severity: critical
              service: egov-hello
            annotations:
              summary: "Circuit Breaker Opened for egov-hello"
-             description: "Circuit Breaker가 Open 되었습니다. 2회 이상의 연속 오류가 발생했습니다."
-   ```
+             description: "3회 이상의 연속 오류 발생"
+	```
+    
+    - 5분 동안 발생한 5xx 에러 횟수가 임계값(3)을 넘고 10초 동안 이 조건이 충족되면 `severity: critical` 라벨을 붙여 알림 전송
+        
+- **Prometheus** (`manifests/egov-monitoring/prometheus.yaml`)
+    
+    - AlertManager와 연동
+        
+    - 알림 규칙 적용을 위한 rule_files 설정
 
-3. Prometheus (`manifests/egov-monitoring/prometheus.yaml`)
-   - AlertManager와 연동
-   - 알림 규칙 적용
-   ```yaml
+
+  ```yaml
    alerting:
      alertmanagers:
      - static_configs:
@@ -477,54 +525,49 @@ spec:
          - alertmanager:9093
    rule_files:
    - /etc/prometheus/rules/*.yaml
-   ```
-   - volume mounts 추가
-   ```yaml
+
+   ---
    volumeMounts:
      - name: prometheus-rules
        mountPath: /etc/prometheus/rules
-   ```
-   - volumes 추가
-   ```yaml
    volumes:
      - name: prometheus-rules
        configMap:
          name: prometheus-rules
    ```
+		
 
-### 6.2 알림 전송 테스트 실행
-- slack 채널로 알림이 전송되는지 확인하는 스크립트 실행
+### 6.2 알림 전송 테스트
+
 ```bash
 ./3-test-alerting.sh
 ```
 
-### 6.2.1 테스트 시나리오
+1. AlertManager 설정 적용 및 재배포
 
-1. AlertManager 설정 적용
-   ```bash
+```bash
    kubectl apply -f manifests/egov-monitoring/alertmanager-config.yaml
    kubectl rollout restart deployment alertmanager -n egov-monitoring
-   ```
+```    
 
-2. AlertManager 상태 확인
+2. AlertManager와 Prometheus 상태 확인
+
    ```bash
    # 로그 확인
    kubectl logs -l app=alertmanager -n egov-monitoring
 
    # 설정 확인
    kubectl get secret alertmanager-config -n egov-monitoring -o jsonpath='{.data.alertmanager\.yaml}' | base64 -d
-   ```
 
-3. 연결 테스트
-   ```bash
    # 포트포워딩
    kubectl port-forward svc/alertmanager -n egov-monitoring 9093:9093
 
    # 상태 확인
    curl -s http://localhost:9093/-/healthy
    ```
+	
+3. 테스트 알림 전송 (예: `curl -H "Content-Type: application/json" -d '[ ... ]' http://localhost:9093/api/v1/alerts`)
 
-4. 테스트 알림 전송
    ```bash
    curl -H "Content-Type: application/json" -d '[{
      "labels": {
@@ -538,37 +581,33 @@ spec:
      }
    }]' http://localhost:9093/api/v1/alerts
    ```
+    
+4. AlertManager UI 및 Slack 채널에서 알림 도착 여부 확인
 
-5. AlertManager UI 확인
    ```bash
    kubectl port-forward svc/alertmanager -n egov-monitoring 9093:9093
    ```
-   - URL: http://localhost:9093/#/alerts
+   - URL: http://localhost:9093/#/alerts    
 
-### 6.3 Circuit Breaker 알림 테스트 실행
-- Circuit Breaker가 Open 되었을 때 알림이 전송되는지 확인하는 스크립트 실행
+### 6.3 Circuit Breaker 알림 테스트
+
 ```bash
 ./4-test-alert-notification.sh
 ```
 
-### 6.3.1 테스트 시나리오
-
-1. 알림 규칙 적용
+1. Circuit Breaker Alert Rule 적용
    ```bash
    kubectl apply -f manifests/egov-monitoring/circuit-breaker-alerts-configmap.yaml
    kubectl rollout restart deployment prometheus -n egov-monitoring
-   ```
 
-2. 알림 규칙 확인
-   ```bash
    # Prometheus Rules 확인
    kubectl get configmap prometheus-rules -n egov-monitoring
    
    # 규칙 내용 상세 확인
    kubectl get configmap prometheus-rules -n egov-monitoring -o yaml
    ```
-
-3. 알림 발생 확인
+    
+2. 에러 트래픽 발생(예: 20회 연속 요청)
   ```bash
   # 에러 요청 생성
   for i in {1..20}; do 
@@ -577,7 +616,11 @@ spec:
     echo
     sleep 0.5
   done
+  ```
+    
+3. AlertManager 로그 및 UI 확인
 
+  ```bash
   # AlertManager 가 정상적으로 작동하는지 로그 확인
   kubectl logs -l app=alertmanager -n egov-monitoring
 
@@ -585,80 +628,86 @@ spec:
   kubectl port-forward svc/alertmanager -n egov-monitoring 9093:9093
   http://localhost:9093/#/alerts
   ```
-
-4. Slack 채널 확인
-   - 알림이 전송되었는지 확인
+    
+4. Slack 채널 알림 도착 확인
+    
 
 ### 6.4 알림 설정 가이드
 
-#### 6.4.1 알림 임계값 조정
-- 에러 횟수: 5회/5분
-- 지속 시간: 10초
-- 심각도: critical
+- **임계값 조정**: 운영 환경에 맞춰 에러 횟수 5회/5분, 지속 시간 10분, 심각도 critical 등으로 변경 가능
+    
+- **알림 포맷**: “🔥Alert Firing” / “✅Alert Resolved” 등으로 구분
+    
+- **문제 해결**:
+    
+    - Webhook URL 확인
+        
+    - Prometheus, AlertManager 설정 누락 여부 확인
+        
+    - 알림 규칙이 실제 트래픽 패턴과 맞는지 검토
 
-#### 6.4.2 알림 형식
-- 발생 시: 🔥 Alert Firing
-- 해결 시: ✅ Alert Resolved
-- 포함 정보:
-  - Alert 이름
-  - 설명
-  - 서비스명
-  - 심각도
-  - 상태
-
-#### 6.4.3 문제 해결
-일반적인 문제 및 해결 방법:
-
-1. AlertManager 템플릿 오류
+		
    ```bash
-   # 로그 확인
-   kubectl logs -l app=alertmanager -n egov-monitoring
+   # Prometheus UI에서 확인
+   http://localhost:30004
+
+   # 알림 조건 확인
+   sum(increase(istio_requests_total{
+     response_code=~"5.*",
+     destination_service="egov-hello.egov-app.svc.cluster.local"
+   }[5m])) by (destination_service) > 3
    ```
 
-2. Slack 연동 실패
-   - Webhook URL 유효성 확인
-   - AlertManager 외부 네트워크 연결 확인
-   - 설정 문법 오류 확인
-
-3. 알림 규칙 문제
-   ```bash
-   # 규칙 상태 확인
-   kubectl get prometheusrules -n egov-monitoring
-   ```
 
 ## 7. 문제 해결
 
 ### 7.1 일반적인 문제
-1. Gateway Service 연결 실패
-   ```bash
-   kubectl get svc istio-ingressgateway -n istio-system
-   kubectl logs -l app=istio-ingressgateway -n istio-system
-   ```
 
-2. Virtual Service 설정 확인
-   ```bash
-   istioctl analyze
-   kubectl get virtualservice -n egov-app
-   ```
+- **Istio Ingress Gateway 연결 실패**
+    
+    ```bash
+    kubectl logs -l app=istio-ingressgateway -n istio-system
+    ```
+    
+- **Virtual Service 설정 오류**
+    
+    ```bash
+    istioctl analyze
+    kubectl get virtualservice -n egov-app
+    ```
+    
+- **Destination Rule 상태 이상**
+    
+    ```bash
+    kubectl get destinationrule -n egov-app
+    istioctl proxy-config cluster deploy/egov-hello -n egov-app
+    ```
+    
 
-3. Circuit Breaker 상태 확인
-   ```bash
-   kubectl get destinationrule -n egov-app
-   istioctl proxy-config cluster deploy/egov-hello -n egov-app
-   ```
+### 7.2 로그 분석
 
-### 7.2 로그 확인
-```bash
-# Istio Proxy 로그
-kubectl logs <pod-name> -c istio-proxy -n egov-app
+- **Istio Proxy 로그**
+    
+    ```bash
+    kubectl logs <pod-name> -c istio-proxy -n egov-app
+    ```
+    
+- **애플리케이션 컨테이너 로그**
+    
+    ```bash
+    kubectl logs <pod-name> -c egov-hello -n egov-app
+    ```
+    
 
-# 애플리케이션 로그
-kubectl logs <pod-name> -c egov-hello -n egov-app
-```
+문제 발생 시 로그를 분석하여, 설정 오류나 네트워크, 애플리케이션 장애 등을 파악합니다.
 
 ## 8. 참고 자료
 
-- [Istio Documentation](https://istio.io/latest/docs/)
-- [Istio Traffic Management](https://istio.io/latest/docs/concepts/traffic-management/)
+- [Istio 공식 문서](https://istio.io/latest/docs/)
+    
+- [Istio 트래픽 관리 개념](https://istio.io/latest/docs/concepts/traffic-management/)
+    
 - [Istio Circuit Breaking](https://istio.io/latest/docs/tasks/traffic-management/circuit-breaking/)
+    
 - [Istio Fault Injection](https://istio.io/latest/docs/tasks/traffic-management/fault-injection/)
+    
