@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: egov-hello
+        variant: normal
     spec:
       containers:
       - name: egov-hello

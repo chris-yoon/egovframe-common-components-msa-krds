@@ -395,18 +395,45 @@ fault:
 ### 5.3 Mirroring
 
 ```yaml
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: egov-hello
+  namespace: egov-app
+spec:
+  host: egov-hello
+  subsets:
+  - name: v1
+    labels:
+      variant: normal
+  - name: v2
+    labels:
+      variant: error
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+
+---
+apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: egov-hello
+  namespace: egov-app
 spec:
   hosts:
-  - egov-hello
+  - "*"
+  gateways:
+  - istio-system/istio-ingressgateway
   http:
-  - route:
+  - match:
+    - uri:
+        prefix: /a/b/c/hello
+    route:
     - destination:
         host: egov-hello
         subset: v1
+        port:
+          number: 80
     mirror:
       host: egov-hello
       subset: v2
@@ -415,9 +442,18 @@ spec:
 ```
 
 - 실트래픽은 v1으로 전달, 동일 요청을 v2로 “복사” (v2에서 실제 응답은 반환하지 않음)
+
+- `5-test-mirroring.sh`` 스크립트 실행으로 테스트 가능
     
 - 무중단 테스트나 A/B 테스트 시 활용
-    
+
+- 주의할 사항
+
+  - Istio Ingress Gateway 를 통해 요청을 받으면 VirtualService를 통해 라우팅
+
+  - Ingress Gateway를 통하지 않고, 클러스터 내부에서 요청을 처리하는 경우, VirtualService를 통해 라우팅하지 않음
+
+  - 즉, http://localhost:9000/a/b/c/hello 와 같은 Gateway Server로 요청을 보낼 경우, Mirroring이 적용되지 않음
 
 ## 6. 알림 테스트
 
