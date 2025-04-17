@@ -72,7 +72,7 @@ k8s-deploy/
     │   ├── 06-setup-infrastructure.sh # 인프라 서비스 설치 스크립트
     │   ├── 07-setup-applications.sh  # 애플리케이션 서비스 배포 스크립트
     │   ├── 08-show-access-info.sh  # 서비스 접근 정보 출력 스크립트
-    │   └── manual-install-guide.sh  # 수동 설치 가이드 스크립트
+    │   └── manual-install-guide.md  # 수동 설치 가이드 스크립트
     ├── cleanup/           # 정리 스크립트
     │   ├── cleanup.sh        # 전체 정리 스크립트
     │   ├── 01-cleanup-applications.sh    # 애플리케이션 정리 스크립트
@@ -88,7 +88,11 @@ k8s-deploy/
         │   ├── 2-test-circuitbreaking.sh  # 서킷브레이커 테스트 스크립트
         │   ├── 3-test-alerting.sh  # 알림 전송 테스트 스크립트
         │   ├── 4-test-alert-notification.sh  # Circuit Breaker 알림 테스트 스크립트
-        │   └── manual-test-istio-guide.sh  # Istio 수동 테스트 가이드 스크립트
+        │   ├── 5-test-mirroring.sh  # Mirroring 테스트 스크립트
+        │   ├── 6-test-fault-injection.sh  # Fault Injection 테스트 스크립트
+        │   ├── 7-test-canary-release.sh  # Canary Release 테스트 스크립트
+        │   ├── 8-test-blue-green-release.sh  # Blue-Green 배포 테스트 스크립트
+        │   └── manual-test-istio-guide.md  # Istio 수동 테스트 가이드 스크립트
         └── pod/               # Pod 관련 유틸리티 스크립트
            ├── check-pod.sh      # Pod 상태 확인 스크립트
            ├── exec-pod.sh       # Pod 내 컨테이너 실행 스크립트
