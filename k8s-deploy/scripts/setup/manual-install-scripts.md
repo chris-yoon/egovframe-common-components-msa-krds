@@ -80,6 +80,7 @@ kubectl apply -f kiali.yaml
 kubectl apply -f jaeger.yaml
 kubectl apply -f loki.yaml
 kubectl apply -f alertmanager.yaml
+kubectl apply -f opentelemetry-collector.yaml
 kubectl wait --for=condition=Ready pods --all -n egov-monitoring --timeout=300s
 ```
 
