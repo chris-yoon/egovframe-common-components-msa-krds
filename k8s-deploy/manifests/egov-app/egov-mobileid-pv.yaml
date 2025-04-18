@@ -11,7 +11,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: standard
   hostPath:
-    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/EgovMobileId/config"
+    path: "${MOBILEID_CONFIG_PATH}"
     type: DirectoryOrCreate
 ---
 apiVersion: v1

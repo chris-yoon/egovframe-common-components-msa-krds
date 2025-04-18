@@ -11,7 +11,8 @@ echo -e "${YELLOW}Installing MySQL...${NC}"
 
 # MySQL 리소스 생성
 echo -e "${GREEN}Creating MySQL PV and PVC...${NC}"
-kubectl apply -f ../../manifests/egov-db/mysql-pv.yaml
+export DATA_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.data_base_path}')
+envsubst '${DATA_BASE_PATH}' < ../../manifests/egov-db/mysql-pv.yaml | kubectl apply -f -
 
 echo -e "${GREEN}Creating MySQL Secret...${NC}"
 kubectl apply -f ../../manifests/egov-db/mysql-secret.yaml

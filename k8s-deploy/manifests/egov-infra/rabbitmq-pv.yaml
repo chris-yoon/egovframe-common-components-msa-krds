@@ -9,7 +9,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/rabbitmq"
+    path: "${DATA_BASE_PATH}/rabbitmq"
     type: DirectoryOrCreate
   storageClassName: standard
 

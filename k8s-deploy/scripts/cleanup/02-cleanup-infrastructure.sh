@@ -13,10 +13,6 @@ echo -e "${YELLOW}Removing infrastructure services...${NC}"
 echo -e "${GREEN}Removing Gateway Server...${NC}"
 kubectl delete -f ../../manifests/egov-infra/gatewayserver-deployment.yaml 2>/dev/null || true
 
-# ConfigMap 제거
-echo -e "${GREEN}Removing Common ConfigMap...${NC}"
-kubectl delete -f ../../manifests/egov-infra/egov-common-configmap.yaml 2>/dev/null || true
-
 # RabbitMQ 관련 리소스 제거
 echo -e "${GREEN}Removing RabbitMQ resources...${NC}"
 

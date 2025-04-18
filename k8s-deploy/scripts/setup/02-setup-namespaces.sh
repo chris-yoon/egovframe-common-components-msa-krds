@@ -6,6 +6,11 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
+# 전역 ConfigMap 생성
+echo -e "${YELLOW}Creating global configuration...${NC}"
+kubectl apply -f ../../manifests/common/egov-global-configmap.yaml
+echo -e "${GREEN}Global configuration created${NC}"
+
 # 네임스페이스 생성 함수
 create_namespace() {
     local ns=$1
@@ -49,4 +54,7 @@ echo -e "${YELLOW}You can switch contexts using:${NC}"
 # 필요한 네임스페이스에 사이드카 주입 활성화
 echo "Enabling sidecar injection for required namespaces..."
 kubectl label namespace egov-infra istio-injection=enabled --overwrite
-kubectl label namespace egov-app istio-injection=enabled --overwrite
+
+# 공통적으로 사용할 ConfigMap 생성
+kubectl apply -f ../../manifests/common/egov-common-configmap.yaml -n egov-app
+kubectl apply -f ../../manifests/common/egov-common-configmap.yaml -n egov-infra

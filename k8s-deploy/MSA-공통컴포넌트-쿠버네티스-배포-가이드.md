@@ -46,6 +46,7 @@
 ### 아키텍처 구성도
 
 ```mermaid
+%%{ init: { "flowchart": { "useMaxWidth": true } } }%%
 graph TB
     Client[클라이언트] --> Gateway[Gateway Server]
     
@@ -196,11 +197,13 @@ k8s-deploy/
 │   └── opensearch/         # OpenSearch 데이터 디렉토리
 │       └── nodes/          # OpenSearch 노드 데이터 디렉토리
 ├── manifests/             # Kubernetes 리소스 매니페스트 디렉토리
+│   ├── egov-common/           # 공통 환경 변수 설정 매니페스트
+│   │   ├── egov-common-configmap.yaml       # 공통 환경 변수 설정 파일
+│   │   ├── egov-global-configmap.yaml       # 전역 환경 변수 설정 파일
 │   ├── egov-app/           # 애플리케이션 서비스 매니페스트
 │   │   ├── egov-author-deployment.yaml       # EgovAuthor 배포 파일
 │   │   ├── egov-board-deployment.yaml       # EgovBoard 배포 파일
 │   │   ├── egov-cmmncode-deployment.yaml    # EgovCmmnCode 배포 파일
-│   │   ├── egov-common-configmap.yaml       # 공통 환경 변수 설정 파일
 │   │   ├── egov-login-deployment.yaml       # EgovLogin 배포 파일
 │   │   ├── egov-main-deployment.yaml        # EgovMain 배포 파일
 │   │   ├── egov-mobileid-pv.yaml            # EgovMobileId PV 설정 파일
@@ -215,7 +218,6 @@ k8s-deploy/
 │   │   ├── opensearch-service.yaml        # OpenSearch 서비스 설정 파일
 │   │   └── opensearch-statefulset.yaml   # OpenSearch StatefulSet 설정 파일
 │   ├── egov-infra/         # 인프라 서비스 매니페스트
-│   │   ├── egov-common-configmap.yaml     # 공통 환경 변수 설정 파일
 │   │   ├── gatewayserver-deployment.yaml  # 게이트웨이 서버 배포 파일
 │   │   ├── rabbitmq-service.yaml          # RabbitMQ 서비스 배포 파일
 │   │   ├── rabbitmq-configmap.yaml        # RabbitMQ 환경 변수 설정 파일
@@ -581,6 +583,7 @@ Istio 서비스 메시를 설치하고 구성한다:
 - Istio 1.25.0 버전을 다운로드 및 설치
 - istioctl을 사용하여 default 프로필로 Istio 구성요소 설치
 - istio-system 네임스페이스에 기본 설정 적용
+- egov-app 네임스페이스에 sidecar injection 활성화
 - Istio 텔레메트리(메트릭, 로그, 트레이스) 설정 적용
 - 설치 완료 후 모든 Istio 파드의 Ready 상태 확인
 
@@ -967,10 +970,10 @@ spec:
 - Spring Boot 2.7.x 에서 사용하려면 Spring Cloud Sleuth OTel을 사용해야 한다. 하지만, logback을 사용하려면, Spring Boot 3.0.x 이상을 사용해야 한다.
 - 여기서는 EgovHello를 예시로 사용한다.
 
-3. 애플리케이션 로그:
+1. 애플리케이션 로그:
   - Spring Boot → OpenTelemetry Logback Appender → OTel Collector → Loki
   - 직접 gRPC로 4317 포트를 통해 전송
-4. Istio 액세스 로그:
+2. Istio 액세스 로그:
   - Envoy Proxy → Istio Telemetry → OTel Collector → Loki
   - Istio의 telemetry API를 통해 전송
 

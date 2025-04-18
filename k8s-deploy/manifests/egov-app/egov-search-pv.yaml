@@ -12,7 +12,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: standard
   hostPath:
-    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/EgovSearch-config/config"
+    path: "${SEARCH_BASE_PATH}/config"
     type: DirectoryOrCreate
 ---
 apiVersion: v1
@@ -42,7 +42,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: standard
   hostPath:
-    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/EgovSearch-config/model"
+    path: "${SEARCH_BASE_PATH}/model"
     type: DirectoryOrCreate
 ---
 apiVersion: v1
@@ -72,7 +72,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: standard
   hostPath:
-    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/EgovSearch-config/example"
+    path: "${SEARCH_BASE_PATH}/example"
     type: DirectoryOrCreate
 ---
 apiVersion: v1
@@ -102,7 +102,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: standard
   hostPath:
-    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/EgovSearch-config/cacerts"
+    path: "${SEARCH_BASE_PATH}/cacerts"
     type: DirectoryOrCreate
 ---
 apiVersion: v1

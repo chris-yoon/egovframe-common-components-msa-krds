@@ -12,7 +12,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: standard
   hostPath:
-    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/mysql"
+    path: "${DATA_BASE_PATH}/mysql"
     type: DirectoryOrCreate
 ---
 apiVersion: v1

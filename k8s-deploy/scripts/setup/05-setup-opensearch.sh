@@ -10,7 +10,8 @@ NC='\033[0m'
 echo -e "${YELLOW}Installing OpenSearch...${NC}"
 
 echo -e "${GREEN}Creating OpenSearch PV and PVC...${NC}"
-kubectl apply -f ../../manifests/egov-db/opensearch-pv.yaml
+export DATA_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.data_base_path}')
+envsubst '${DATA_BASE_PATH}' < ../../manifests/egov-db/opensearch-pv.yaml | kubectl apply -f -
 
 echo -e "${GREEN}Creating OpenSearch ConfigMap...${NC}"
 kubectl apply -f ../../manifests/egov-db/opensearch-configmap.yaml

@@ -20,13 +20,28 @@ kubectl apply -f ../../manifests/egov-istio/telemetry.yaml
 kubectl wait --for=condition=Ready pods --all -n istio-system --timeout=300s
 ```
 
-## 2. 네임스페이스 생성
+## 2. 전역 설정 및 네임스페이스 생성
 
 ```bash
+# 전역 ConfigMap 생성 (hostPath 경로)
+kubectl apply -f ../../manifests/common/egov-global-configmap.yaml
+
+# 네임스페이스 생성
 kubectl create namespace egov-monitoring
 kubectl create namespace egov-db
 kubectl create namespace egov-infra
 kubectl label namespace egov-infra istio-injection=enabled
+
+# ConfigMap 상태 확인
+kubectl get configmap egov-global-config
+kubectl get configmap egov-common-config
+
+# ConfigMap에서 값 추출해서 환경 변수로 설정
+export DATA_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.data_base_path}')
+
+# 공통적으로 사용할 ConfigMap 생성
+kubectl apply -f ../../manifests/common/egov-common-configmap.yaml -n egov-app
+kubectl apply -f ../../manifests/common/egov-common-configmap.yaml -n egov-infra
 ```
 
 ## 3. 모니터링 설치
@@ -88,7 +103,7 @@ kubectl wait --for=condition=Ready pods --all -n egov-monitoring --timeout=300s
 
 ```bash
 cd ../egov-db
-kubectl apply -f mysql-pv.yaml
+envsubst '${DATA_BASE_PATH}' < mysql-pv.yaml | kubectl apply -f -
 kubectl apply -f mysql-secret.yaml
 kubectl apply -f mysql-statefulset.yaml
 kubectl apply -f mysql-service.yaml
@@ -98,7 +113,7 @@ kubectl rollout status statefulset/mysql -n egov-db --timeout=300s
 ## 5. OpenSearch 설치
 
 ```bash
-kubectl apply -f opensearch-pv.yaml
+envsubst '${DATA_BASE_PATH}' < opensearch-pv.yaml | kubectl apply -f -
 kubectl apply -f opensearch-configmap.yaml
 kubectl apply -f opensearch-secret.yaml
 kubectl apply -f opensearch-certs-secret.yaml
@@ -112,9 +127,8 @@ kubectl rollout status statefulset/opensearch -n egov-db --timeout=300s
 
 ```bash
 cd ../egov-infra
-kubectl apply -f egov-common-configmap.yaml
 kubectl apply -f rabbitmq-configmap.yaml
-kubectl apply -f rabbitmq-pv.yaml
+envsubst '${DATA_BASE_PATH}' < rabbitmq-pv.yaml | kubectl apply -f -
 kubectl apply -f rabbitmq-deployment.yaml
 kubectl apply -f rabbitmq-service.yaml
 kubectl rollout status deployment/rabbitmq -n egov-infra --timeout=300s
@@ -128,9 +142,10 @@ kubectl rollout status deployment/gateway-server -n egov-infra --timeout=300s
 ```bash
 cd ../egov-app
 kubectl get secret mysql-secret -n egov-db -o yaml | sed 's/namespace: egov-db/namespace: egov-app/' | kubectl apply -f -
-kubectl apply -f egov-common-configmap.yaml
-kubectl apply -f egov-mobileid-pv.yaml
-kubectl apply -f egov-search-pv.yaml
+export MOBILEID_CONFIG_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.mobileid_config_path}')
+envsubst '${MOBILEID_CONFIG_PATH}' < egov-mobileid-pv.yaml | kubectl apply -f -
+export SEARCH_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.search_base_path}')
+envsubst '${SEARCH_BASE_PATH}' < egov-search-pv.yaml | kubectl apply -f -
 ```
 
 ### 각 서비스 배포

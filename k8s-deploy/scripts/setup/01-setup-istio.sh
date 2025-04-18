@@ -50,7 +50,7 @@ echo -e "${GREEN}Applying Istio configuration...${NC}"
 kubectl apply -f "${BASE_DIR}/manifests/egov-istio/config.yaml"
 
 # egov-app 네임스페이스가 없다면 생성
-echo -e "${YELLOW}Creating egov-app namespace if it doesn't exist...${NC}"
+echo -e "${YELLOW}Creating egov-app namespace ${NC}"
 kubectl create namespace egov-app --dry-run=client -o yaml | kubectl apply -f -
 
 # Istio injection 레이블 추가

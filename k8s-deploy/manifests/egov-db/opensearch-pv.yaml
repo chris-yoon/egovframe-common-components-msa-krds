@@ -12,7 +12,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: standard
   hostPath:
-    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/opensearch"
+    path: "${DATA_BASE_PATH}/opensearch"
     type: DirectoryOrCreate
 ---
 apiVersion: v1

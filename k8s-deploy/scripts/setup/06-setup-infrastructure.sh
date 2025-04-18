@@ -17,17 +17,14 @@ check_deployment() {
 # Infrastructure 서비스 설치 (egov-infra 네임스페이스)
 echo -e "${YELLOW}Installing infrastructure services...${NC}"
 
-# Common ConfigMap 생성
-echo -e "${GREEN}Creating Common ConfigMap...${NC}"
-kubectl apply -f ../../manifests/egov-infra/egov-common-configmap.yaml
-
 # RabbitMQ 설치
 echo -e "${GREEN}Installing RabbitMQ...${NC}"
 echo -e "${GREEN}Creating RabbitMQ ConfigMap...${NC}"
 kubectl apply -f ../../manifests/egov-infra/rabbitmq-configmap.yaml
 
 echo -e "${GREEN}Creating RabbitMQ PV and PVC...${NC}"
-kubectl apply -f ../../manifests/egov-infra/rabbitmq-pv.yaml
+export DATA_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.data_base_path}')
+envsubst '${DATA_BASE_PATH}' < ../../manifests/egov-infra/rabbitmq-pv.yaml | kubectl apply -f -
 
 echo -e "${GREEN}Creating RabbitMQ Deployment...${NC}"
 kubectl apply -f ../../manifests/egov-infra/rabbitmq-deployment.yaml
