@@ -519,58 +519,59 @@ docker images --format "{{.Repository}} {{.Tag}}" | grep " k8s$"  # k8s 태그�
 ```
 
 ### 4.3 Kubernetes 배포
-#### 4.3.1 PersistentVolume 설정 확인 및 수정
-각 PV의 hostPath를 로컬 환경에 맞게 수정해야 한다:
+#### 4.3.1 PersistentVolume 설정
 
-a. MySQL PV 설정 (`k8s-deploy/manifests/egov-db/mysql-pv.yaml`):
+1. Global ConfigMap 설정
+먼저 `k8s-deploy/manifests/common/egov-global-configmap.yaml` 파일에서 환경에 맞는 경로를 설정합니다:
+
 ```yaml
-spec:
-  hostPath:
-    path: "/your/local/path/k8s-deploy/data/mysql"  # 로컬 절대 경로로 수정
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: egov-global-config
+data:
+  # 기본 데이터 경로
+  data_base_path: "/Your/Path/to/data"
+  
+  # EgovMobileId 설정 경로
+  mobileid_config_path: "/Your/Path/to/EgovMobileId/config"
+  
+  # EgovSearch 관련 경로
+  search_base_path: "/Your/Path/to/EgovSearch-config"
 ```
 
-b. OpenSearch PV 설정 (`k8s-deploy/manifests/egov-db/opensearch-pv.yaml`):
-```yaml
-spec:
-  hostPath:
-    path: "/your/local/path/k8s-deploy/data/opensearch"  # 로컬 절대 경로로 수정
+- `data_base_path`: 데이터가 저장될 기본 경로 (mysql, opensearch, rabbitmq 데이터 저장 경로)
+- `mobileid_config_path`: EgovMobileId 설정 파일이 위치한 경로 (verifyConfig-docker.json, sp.wallet, sp.did)
+- `search_base_path`: EgovSearch 관련 파일이 위치한 기본 경로 (config, model, cacerts, example)
+
+2. ConfigMap 적용
+```bash
+kubectl apply -f k8s-deploy/manifests/common/egov-global-configmap.yaml
 ```
 
-c. RabbitMQ PV 설정 (`k8s-deploy/manifests/egov-infra/rabbitmq-pv.yaml`):
-```yaml
-spec:
-  hostPath:
-    path: "/your/local/path/k8s-deploy/data/rabbitmq"  # 로컬 절대 경로로 수정
+#### 4.3.2 필요한 설정 파일 준비
+
+1. EgovMobileId 설정 파일
+다음 파일들을 `EgovMobileId/config` 디렉토리에 준비합니다:
+- `verifyConfig-docker.json`
+- `sp.wallet`
+- `sp.did`
+
+2. EgovSearch 설정 파일
+다음 디렉토리 구조와 파일들을 준비합니다:
 ```
-
-d. EgovMobileId PV 설정 (`k8s-deploy/manifests/egov-app/egov-mobileid-pv.yaml`):
-```yaml
-spec:
-  hostPath:
-    path: "/your/local/path/EgovMobileId/config"  # 로컬 절대 경로로 수정
-```
-
-e. EgovSearch PV 설정 (`k8s-deploy/manifests/egov-app/egov-search-pv.yaml`):
-```yaml
-# Config PV
-spec:
-  hostPath:
-    path: "/your/local/path/EgovSearch-config/config"  # 로컬 절대 경로로 수정
-
-# Model PV
-spec:
-  hostPath:
-    path: "/your/local/path/EgovSearch-config/model"  # 로컬 절대 경로로 수정
-
-# Example PV
-spec:
-  hostPath:
-    path: "/your/local/path/EgovSearch-config/example"  # 로컬 절대 경로로 수정
-
-# Cacerts PV
-spec:
-  hostPath:
-    path: "/your/local/path/EgovSearch-config/cacerts"  # 로컬 절대 경로로 수정
+EgovSearch-config/
+├── config/
+│   └── searchConfig-docker.json
+├── model/
+│   ├── model.onnx
+│   └── tokenizer.json
+├── cacerts/
+│   └── cacerts
+└── example/
+    ├── stoptags.txt
+    ├── synonyms.txt
+    └── dictionaryRules.txt
 ```
 
 #### 4.3.2 Istio 설치
