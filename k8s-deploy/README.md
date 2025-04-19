@@ -72,7 +72,8 @@ k8s-deploy/
     │   ├── 05-setup-opensearch.sh    # OpenSearch 설치 스크립트
     │   ├── 06-setup-infrastructure.sh # 인프라 서비스 설치 스크립트
     │   ├── 07-setup-applications.sh  # 애플리케이션 서비스 배포 스크립트
-    │   ├── 08-show-access-info.sh  # 서비스 접근 정보 출력 스크립트
+    │   ├── 08-setup-cicd.sh  # CICD 서비스 설치 스크립트
+    │   ├── 09-show-access-info.sh  # 서비스 접근 정보 출력 스크립트
     │   └── manual-install-guide.md  # 수동 설치 가이드 스크립트
     ├── cleanup/           # 정리 스크립트
     │   ├── cleanup.sh        # 전체 정리 스크립트
@@ -82,7 +83,8 @@ k8s-deploy/
     │   ├── 04-cleanup-opensearch.sh    # OpenSearch 정리 스크립트
     │   ├── 05-cleanup-monitoring.sh    # 모니터링 도구 정리 스크립트
     │   ├── 06-cleanup-namespaces.sh    # 네임스페이스 정리 스크립트
-    │   └── 07-cleanup-istio.sh         # Istio 정리 스크립트
+    │   ├── 07-cleanup-istio.sh         # Istio 정리 스크립트
+    │   └── 08-cleanup-cicd.sh          # CICD 정리 스크립트
     └── utils/           # 유틸리티 스크립트
         ├── test-istio/               # Istio 테스트 스크립트
         │   ├── 1-test-loadbalancing.sh  # 로드밸런싱 테스트 스크립트
@@ -112,6 +114,10 @@ k8s-deploy/
   - `opensearch/`: OpenSearch의 데이터와 설정 파일이 저장됩니다.
     - `nodes/`: OpenSearch 노드의 데이터 파일이 저장됩니다.
   - `rabbitmq/`: RabbitMQ의 데이터 파일이 저장됩니다.
+  - `jenkins/`: Jenkins의 데이터 파일이 저장됩니다.
+  - `gitlab/`: GitLab의 데이터 파일이 저장됩니다.
+  - `sonarqube/`: SonarQube의 데이터 파일이 저장됩니다.
+  - `nexus/`: Nexus의 데이터 파일이 저장됩니다.
 
 - `manifests/`: Kubernetes 리소스를 정의하는 YAML 파일들이 위치합니다.
   - `egov-app/`: 전자정부 프레임워크 애플리케이션 배포 정의
@@ -119,6 +125,7 @@ k8s-deploy/
   - `egov-infra/`: 인프라 서비스 배포 정의
   - `egov-istio/`: Istio 설치 매니페스트
   - `egov-monitoring/`: 모니터링 도구 배포 정의
+  - `egov-cicd/`: CICD 서비스 배포 정의
 
 - `scripts/`: 설치 및 정리 스크립트들이 위치합니다.
   - `setup/`: Istio 설치부터 애플리케이션 배포까지의 설치 스크립트

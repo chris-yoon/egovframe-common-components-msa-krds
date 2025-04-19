@@ -31,6 +31,7 @@ kubectl create namespace egov-monitoring
 kubectl create namespace egov-db
 kubectl create namespace egov-infra
 kubectl label namespace egov-infra istio-injection=enabled
+kubectl create namespace egov-cicd
 
 # ConfigMap 상태 확인
 kubectl get configmap egov-global-config
@@ -161,6 +162,20 @@ kubectl apply -f egov-cmmncode-deployment.yaml
 kubectl apply -f egov-search-deployment.yaml
 ```
 
+## 8. CICD 설치
+
+```bash
+cd ../egov-cicd
+kubectl apply -f jenkins-rbac.yaml
+export DATA_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.data_base_path}')
+envsubst '${DATA_BASE_PATH}' < jenkins-statefulset.yaml | kubectl apply -f -
+envsubst '${DATA_BASE_PATH}' < gitlab-statefulset.yaml | kubectl apply -f -
+envsubst '${DATA_BASE_PATH}' < sonarqube-deployment.yaml | kubectl apply -f -
+envsubst '${DATA_BASE_PATH}' < nexus-statefulset.yaml | kubectl apply -f -
+kubectl apply -f cicd-services.yaml
+kubectl rollout status statefulset/jenkins -n egov-cicd --timeout=300s
+```
+
 ## 설치 상태 확인
 
 ```bash
@@ -171,5 +186,5 @@ kubectl get pods --all-namespaces
 
 ```bash
 cd ../../scripts/setup
-./08-show-access-info.sh
+./09-show-access-info.sh
 ```

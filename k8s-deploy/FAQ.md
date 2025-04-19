@@ -633,6 +633,319 @@ kubectl get events -n <namespace> | grep <pod-name>
 - Pod 설명에서 볼륨이 올바르게 마운트된 것을 확인할 수 있음
 - 관련 오류 이벤트가 없음
 
+### volumeClaimTemplates란 무엇인가요?
+
+단일 볼륨일 경우는 hostPath를 사용합니다. 
+단일 볼륨일 때는 volumeClaimTemplates를 사용하지 않습니다.
+volumeClaimTemplates는 StatefulSet의 각 Pod에 대해 자동으로 PVC를 생성하는 템플릿입니다.
+
+**1. 기본 구조**:
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+spec:
+  serviceName: mysql
+  replicas: 3
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+```
+
+**2. 생성되는 PVC 이름 패턴**:
+- 형식: `<볼륨이름>-<StatefulSet이름>-<순번>`
+- 예시: 
+  - `data-mysql-0`
+  - `data-mysql-1`
+  - `data-mysql-2`
+
+**3. 주요 특징**:
+
+- **영구성**:
+  - Pod가 삭제되어도 PVC 유지
+  - 데이터 보존 보장
+  - Pod 재생성 시 동일 PVC 재사용
+
+- **순차적 생성**:
+  - Pod와 함께 순차적으로 생성
+  - 0부터 시작하는 인덱스 부여
+  - 순서대로 스케일링
+
+- **고유성**:
+  - 각 Pod마다 독립적인 스토리지
+  - 볼륨 충돌 방지
+  - 데이터 격리 보장
+
+**4. 사용 예시**:
+
+- **단일 볼륨**:
+```yaml
+volumeClaimTemplates:
+- metadata:
+    name: data
+  spec:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        storage: 10Gi
+```
+
+- **다중 볼륨**:
+```yaml
+volumeClaimTemplates:
+- metadata:
+    name: data
+  spec:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        storage: 10Gi
+- metadata:
+    name: logs
+  spec:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        storage: 5Gi
+```
+
+- **스토리지 클래스 지정**:
+```yaml
+volumeClaimTemplates:
+- metadata:
+    name: data
+  spec:
+    storageClassName: "fast-storage"
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        storage: 10Gi
+```
+
+**5. 주의사항**:
+
+- **삭제 동작**:
+  - StatefulSet 삭제 시 PVC 자동 삭제 안됨
+  - 수동 PVC 정리 필요
+  - 데이터 보호를 위한 의도적 설계
+
+- **스케일링**:
+  - Scale Down 시 PVC 유지
+  - Scale Up 시 새 PVC 생성
+  - 불필요한 PVC 수동 정리 필요
+
+- **백업**:
+  - PVC 스냅샷 권장
+  - 정기적 백업 설정
+  - 복구 계획 수립
+
+**6. 관리 명령어**:
+
+```bash
+# PVC 목록 확인
+kubectl get pvc
+
+# 특정 PVC 상세 정보
+kubectl describe pvc data-mysql-0
+
+# PVC 수동 삭제
+kubectl delete pvc data-mysql-0
+
+# 모든 관련 PVC 삭제
+kubectl delete pvc -l app=mysql
+```
+
+**7. 모범 사례**:
+
+- **용량 계획**:
+  - 초기 크기 적절히 설정
+  - 확장 가능성 고려
+  - 스토리지 모니터링
+
+- **백업 전략**:
+  - 정기적 스냅샷
+  - 백업 자동화
+  - 복구 테스트
+
+- **라벨링**:
+```yaml
+volumeClaimTemplates:
+- metadata:
+    name: data
+    labels:
+      app: mysql
+      tier: database
+  spec:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        storage: 10Gi
+```
+
+**8. 문제 해결**:
+
+- **PVC 생성 실패**:
+  - 스토리지 클래스 확인
+  - 용량 제한 확인
+  - 권한 설정 검증
+
+- **Pod 시작 실패**:
+  - PVC 바인딩 상태 확인
+  - 볼륨 마운트 경로 확인
+  - 스토리지 가용성 확인
+
+### hostPath와 volumeClaimTemplates의 차이점
+
+**1. 기본 개념**:
+
+hostPath:
+- 노드의 파일시스템을 직접 마운트
+- 특정 노드의 로컬 경로를 컨테이너에 연결
+- 단순하고 직접적인 방식
+
+volumeClaimTemplates:
+- 동적으로 PVC를 생성하는 템플릿
+- StatefulSet의 각 Pod마다 독립적인 스토리지 제공
+- 추상화된 스토리지 관리 방식
+
+**2. 구현 예시**:
+
+hostPath 예시:
+```yaml
+apiVersion: v1
+kind: Pod
+spec:
+  volumes:
+  - name: data
+    hostPath:
+      path: /data/mysql
+      type: DirectoryOrCreate
+  containers:
+  - name: mysql
+    volumeMounts:
+    - name: data
+      mountPath: /var/lib/mysql
+```
+
+volumeClaimTemplates 예시:
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+spec:
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+```
+
+**3. 주요 차이점**:
+
+- **스케일링**:
+   - hostPath: 
+     - 모든 Pod가 동일 경로 공유
+     - 다중 Pod 실행 시 데이터 충돌 위험
+     - 노드 간 데이터 공유 불가
+   
+   - volumeClaimTemplates:
+     - Pod마다 독립적인 PVC 생성
+     - 자동 스케일링 지원
+     - 클러스터 전체에서 데이터 접근 가능
+
+- **데이터 지속성**:
+   - hostPath:
+     - 노드 종속적
+     - 노드 장애 시 데이터 손실 위험
+     - 수동 백업/복구 필요
+   
+   - volumeClaimTemplates:
+     - 노드 독립적
+     - 자동 데이터 보존
+     - 클라우드 스토리지 통합 가능
+
+- **이식성**:
+   - hostPath:
+     - 특정 노드에 종속
+     - 환경 간 이동 어려움
+     - 로컬 개발에 적합
+   
+   - volumeClaimTemplates:
+     - 클라우드 중립적
+     - 환경 간 이동 용이
+     - 프로덕션 환경에 적합
+
+- **관리**:
+   - hostPath:
+     - 단순한 설정
+     - 직접적인 파일시스템 접근
+     - 제한된 관리 기능
+   
+   - volumeClaimTemplates:
+     - 동적 프로비저닝
+     - 스토리지 클래스 활용
+     - 고급 관리 기능 제공
+
+**4. 사용 시나리오**:
+
+hostPath 적합:
+- 로컬 개발 환경
+- 단일 노드 클러스터
+- 빠른 프로토타이핑
+- 디버깅/테스트
+
+volumeClaimTemplates 적합:
+- 프로덕션 환경
+- 다중 노드 클러스터
+- 스케일링이 필요한 경우
+- 고가용성 요구사항
+
+**5. 구성 관리**:
+
+hostPath 관리:
+```bash
+# 디렉토리 생성
+mkdir -p /data/mysql
+
+# 권한 설정
+chmod 777 /data/mysql
+
+# 데이터 백업
+cp -r /data/mysql /backup/mysql
+```
+
+volumeClaimTemplates 관리:
+```bash
+# PVC 상태 확인
+kubectl get pvc
+
+# 스토리지 클래스 확인
+kubectl get storageclass
+
+# PVC 백업
+kubectl get pvc data-mysql-0 -o yaml > pvc-backup.yaml
+```
+
+**6. 보안 고려사항**:
+
+hostPath:
+- 노드 파일시스템 직접 접근
+- 보안 제한 없음
+- 권한 관리 제한적
+
+volumeClaimTemplates:
+- RBAC 통합
+- 스토리지 정책 적용 가능
+- 암호화 지원
+
 ## 3. 네트워킹
 - Service Discovery
 - Ingress와 Gateway

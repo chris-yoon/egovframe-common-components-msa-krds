@@ -45,6 +45,10 @@ Thumbs.db
 k8s-deploy/data/mysql/
 k8s-deploy/data/opensearch/
 k8s-deploy/data/rabbitmq/
+k8s-deploy/data/jenkins/
+k8s-deploy/data/gitlab/
+k8s-deploy/data/sonarqube/
+k8s-deploy/data/nexus/
 istio-1.25.0/
 
 # Application specific

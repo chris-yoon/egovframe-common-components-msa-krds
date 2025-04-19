@@ -192,46 +192,51 @@ check_applications() {
 echo -e "${YELLOW}Starting setup process...${NC}"
 
 # 1. Istio 설치
-echo -e "\n${YELLOW}[1/7] Installing Istio...${NC}"
+echo -e "\n${YELLOW}[1/8] Installing Istio...${NC}"
 ${SCRIPT_DIR}/01-setup-istio.sh
 check_error "Istio installation"
 check_istio
 
 # 2. Namespace 설정
-echo -e "\n${YELLOW}[2/7] Setting up Namespaces...${NC}"
+echo -e "\n${YELLOW}[2/8] Setting up Namespaces...${NC}"
 ${SCRIPT_DIR}/02-setup-namespaces.sh
 check_error "Namespace setup"
 check_namespaces
 
 # 3. Monitoring 설정
-echo -e "\n${YELLOW}[3/7] Setting up Monitoring...${NC}"
+echo -e "\n${YELLOW}[3/8] Setting up Monitoring...${NC}"
 ${SCRIPT_DIR}/03-setup-monitoring.sh
 check_error "Monitoring setup"
 check_monitoring
 
 # 4. MySQL 설정
-echo -e "\n${YELLOW}[4/7] Setting up MySQL...${NC}"
+echo -e "\n${YELLOW}[4/8] Setting up MySQL...${NC}"
 ${SCRIPT_DIR}/04-setup-mysql.sh
 check_error "MySQL setup"
 check_mysql
 
 # 5. OpenSearch 설정
-echo -e "\n${YELLOW}[5/7] Setting up OpenSearch...${NC}"
+echo -e "\n${YELLOW}[5/8] Setting up OpenSearch...${NC}"
 ${SCRIPT_DIR}/05-setup-opensearch.sh
 check_error "OpenSearch setup"
 check_opensearch
 
 # 6. Infrastructure 설정
-echo -e "\n${YELLOW}[6/7] Setting up Infrastructure...${NC}"
+echo -e "\n${YELLOW}[6/8] Setting up Infrastructure...${NC}"
 ${SCRIPT_DIR}/06-setup-infrastructure.sh
 check_error "Infrastructure setup"
 check_infrastructure
 
 # 7. Applications 설정
-echo -e "\n${YELLOW}[7/7] Setting up Applications...${NC}"
+echo -e "\n${YELLOW}[7/8] Setting up Applications...${NC}"
 ${SCRIPT_DIR}/07-setup-applications.sh
 check_error "Applications setup"
 check_applications
+
+# 8. CICD 설정
+echo -e "\n${YELLOW}[8/8] Setting up CICD...${NC}"
+${SCRIPT_DIR}/08-setup-cicd.sh
+check_error "CICD setup"
 
 # 최종 상태 출력
 echo -e "\n${YELLOW}Final Status:${NC}"
@@ -239,4 +244,4 @@ kubectl get pods --all-namespaces
 
 echo -e "\n${GREEN}Setup completed successfully!${NC}"
 echo -e "${YELLOW}Please check the services using:${NC}"
-${SCRIPT_DIR}/08-show-access-info.sh
+${SCRIPT_DIR}/09-show-access-info.sh

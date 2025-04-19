@@ -24,6 +24,11 @@ echo "- Kiali:   admin/admin"
 echo -e "\n${GREEN}AlertManager Access:${NC}"
 echo "kubectl port-forward svc/alertmanager -n egov-monitoring 9093:9093"
 
+# CICD 접근 정보
+echo -e "\n${BLUE}[CICD]${NC}"
+echo -e "${GREEN}1. Jenkins:${NC}"
+echo "- Web UI: http://localhost:30011"
+
 # 데이터베이스 접근 정보
 echo -e "\n${BLUE}[Databases]${NC}"
 echo -e "${GREEN}1. MySQL:${NC}"

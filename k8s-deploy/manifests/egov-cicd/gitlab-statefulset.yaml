@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: gitlab
+  namespace: egov-cicd
+spec:
+  serviceName: gitlab
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab
+  template:
+    metadata:
+      labels:
+        app: gitlab
+    spec:
+      containers:
+      - name: gitlab
+        image: gitlab/gitlab-ce:16.10.1-ce.0
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 443
+          name: https
+        - containerPort: 22
+          name: ssh
+        volumeMounts:
+        - name: gitlab-config
+          mountPath: /etc/gitlab
+        - name: gitlab-logs
+          mountPath: /var/log/gitlab
+        - name: gitlab-data
+          mountPath: /var/opt/gitlab
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2"
+          limits:
+            memory: "8Gi"
+            cpu: "4"
+        livenessProbe:
+          httpGet:
+            path: /-/health
+            port: 80
+          initialDelaySeconds: 300
+          timeoutSeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /-/health
+            port: 80
+          initialDelaySeconds: 300
+          timeoutSeconds: 10
+          periodSeconds: 30
+      volumes:
+      - name: gitlab-config
+        hostPath:
+          path: ${DATA_BASE_PATH}/gitlab/config
+          type: DirectoryOrCreate
+      - name: gitlab-logs
+        hostPath:
+          path: ${DATA_BASE_PATH}/gitlab/logs
+          type: DirectoryOrCreate
+      - name: gitlab-data
+        hostPath:
+          path: ${DATA_BASE_PATH}/gitlab/data
+          type: DirectoryOrCreate
