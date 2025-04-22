@@ -22,7 +22,7 @@ spec:
         - name: DISABLE_SECURITY_DASHBOARDS_PLUGIN
           value: "true"
         - name: OPENSEARCH_HOSTS
-          value: '["http://opensearch-internal:9200"]'
+          value: '["http://opensearch-0.opensearch-headless:9200"]'
         - name: OPENSEARCH_SSL_VERIFICATIONMODE
           value: "none"
         readinessProbe:

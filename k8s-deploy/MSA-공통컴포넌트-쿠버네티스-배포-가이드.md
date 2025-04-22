@@ -189,17 +189,30 @@ spec:
 
 ```
 k8s-deploy/
-├── README.md              # 가이드 문서
+├── MSA-공통컴포넌트-쿠버네티스-배포-가이드.md  # 가이드 문서
+├── MSA-공통컴포넌트-Istio-테스트-가이드.md  # Istio 테스트 가이드 문서
 ├── bin/                   # 실행 가능한 바이너리 및 도구 디렉토리
 │   └── istio-1.25.0/       # Istio 설치 용도 디렉토리
 ├── data/                  # 영구 데이터 저장소 디렉토리
 │   ├── mysql/              # MySQL 데이터 디렉토리
-│   └── opensearch/         # OpenSearch 데이터 디렉토리
-│       └── nodes/          # OpenSearch 노드 데이터 디렉토리
+│   ├── opensearch/         # OpenSearch 데이터 디렉토리
+│   │   └── nodes/          # OpenSearch 노드 데이터 디렉토리
+│   ├── rabbitmq/         # RabbitMQ 데이터 디렉토리
+│   ├── jenkins/         # Jenkins 데이터 디렉토리
+│   ├── gitlab/         # GitLab 데이터 디렉토리
+│   ├── sonarqube/         # SonarQube 데이터 디렉토리
+│   └── nexus/         # Nexus 데이터 디렉토리
 ├── manifests/             # Kubernetes 리소스 매니페스트 디렉토리
 │   ├── egov-common/           # 공통 환경 변수 설정 매니페스트
 │   │   ├── egov-common-configmap.yaml       # 공통 환경 변수 설정 파일
-│   │   ├── egov-global-configmap.yaml       # 전역 환경 변수 설정 파일
+│   │   └── egov-global-configmap.yaml       # 전역 환경 변수 설정 파일
+│   ├── egov-cicd/          # CICD 서비스 매니페스트
+│   │   ├── jenkins-rbac.yaml       # Jenkins RBAC 설정 파일
+│   │   ├── jenkins-statefulset.yaml  # Jenkins StatefulSet 설정 파일
+│   │   ├── gitlab-statefulset.yaml  # GitLab StatefulSet 설정 파일
+│   │   ├── sonarqube-deployment.yaml  # SonarQube 배포 파일
+│   │   ├── nexus-statefulset.yaml  # Nexus StatefulSet 설정 파일
+│   │   └── cicd-services.yaml  # CICD 서비스 설정 파일
 │   ├── egov-app/           # 애플리케이션 서비스 매니페스트
 │   │   ├── egov-author-deployment.yaml       # EgovAuthor 배포 파일
 │   │   ├── egov-board-deployment.yaml       # EgovBoard 배포 파일
@@ -242,7 +255,10 @@ k8s-deploy/
     │   ├── 04-setup-mysql.sh         # MySQL 설치 스크립트
     │   ├── 05-setup-opensearch.sh    # OpenSearch 설치 스크립트
     │   ├── 06-setup-infrastructure.sh # 인프라 서비스 설치 스크립트
-    │   └── 07-setup-applications.sh  # 애플리케이션 서비스 배포 스크립트
+    │   ├── 07-setup-applications.sh  # 애플리케이션 서비스 배포 스크립트
+    │   ├── 08-setup-cicd.sh  # CICD 서비스 설치 스크립트
+    │   ├── 09-show-access-info.sh  # 서비스 접근 정보 출력 스크립트
+    │   └── manual-install-guide.md  # 수동 설치 가이드 스크립트
     ├── cleanup/           # 정리 스크립트
     │   ├── cleanup.sh        # 전체 정리 스크립트
     │   ├── 01-cleanup-applications.sh    # 애플리케이션 정리 스크립트
@@ -251,8 +267,19 @@ k8s-deploy/
     │   ├── 04-cleanup-opensearch.sh    # OpenSearch 정리 스크립트
     │   ├── 05-cleanup-monitoring.sh    # 모니터링 도구 정리 스크립트
     │   ├── 06-cleanup-namespaces.sh    # 네임스페이스 정리 스크립트
-    │   └── 07-cleanup-istio.sh         # Istio 정리 스크립트
+    │   ├── 07-cleanup-istio.sh         # Istio 정리 스크립트
+    │   └── 08-cleanup-cicd.sh          # CICD 정리 스크립트
     └── utils/           # 유틸리티 스크립트
+        ├── test-istio/               # Istio 테스트 스크립트
+        │   ├── 1-test-loadbalancing.sh  # 로드밸런싱 테스트 스크립트
+        │   ├── 2-test-circuitbreaking.sh  # 서킷브레이커 테스트 스크립트
+        │   ├── 3-test-alerting.sh  # 알림 전송 테스트 스크립트
+        │   ├── 4-test-alert-notification.sh  # Circuit Breaker 알림 테스트 스크립트
+        │   ├── 5-test-mirroring.sh  # Mirroring 테스트 스크립트
+        │   ├── 6-test-fault-injection.sh  # Fault Injection 테스트 스크립트
+        │   ├── 7-test-canary-release.sh  # Canary Release 테스트 스크립트
+        │   ├── 8-test-blue-green-release.sh  # Blue-Green 배포 테스트 스크립트
+        │   └── manual-test-istio-guide.md  # Istio 수동 테스트 가이드 스크립트
         └── pod/               # Pod 관련 유틸리티 스크립트
            ├── check-pod.sh      # Pod 상태 확인 스크립트
            ├── exec-pod.sh       # Pod 내 컨테이너 실행 스크립트
@@ -268,6 +295,10 @@ k8s-deploy/
   - `opensearch/`: OpenSearch의 데이터와 설정 파일이 저장된다.
     - `nodes/`: OpenSearch 노드의 데이터 파일이 저장된다.
   - `rabbitmq/`: RabbitMQ의 데이터 파일이 저장된다.
+  - `jenkins/`: Jenkins의 데이터 파일이 저장된다.
+  - `gitlab/`: GitLab의 데이터 파일이 저장된다.
+  - `sonarqube/`: SonarQube의 데이터 파일이 저장된다.
+  - `nexus/`: Nexus의 데이터 파일이 저장된다.
 
 - `manifests/`: Kubernetes 리소스를 정의하는 YAML 파일들이 위치한다.
   - `egov-app/`: 전자정부 프레임워크 애플리케이션 배포 정의
@@ -275,6 +306,7 @@ k8s-deploy/
   - `egov-infra/`: 인프라 서비스 배포 정의
   - `egov-istio/`: Istio 설치 매니페스트
   - `egov-monitoring/`: 모니터링 도구 배포 정의
+  - `egov-cicd/`: CICD 서비스 배포 정의
 
 - `scripts/`: 설치 및 정리 스크립트들이 위치한다.
   - `setup/`: Istio 설치부터 애플리케이션 배포까지의 설치 스크립트
@@ -393,7 +425,7 @@ data:
 데이터 저장을 위한 디렉토리 생성:
 ```bash
 # 데이터 디렉토리 생성
-mkdir -p k8s-deploy/data/{mysql,opensearch,rabbitmq}
+mkdir -p k8s-deploy/data/{mysql,opensearch,rabbitmq,jenkins,gitlab,sonarqube,nexus}
 
 # 권한 설정
 chmod -R 777 k8s-deploy/data
@@ -1280,7 +1312,158 @@ dashboardProviders:
         path: /var/lib/grafana/dashboards/istio
 ```
 
-## 8. 참고 자료
+## 8. CICD 환경 구성
+
+### 8.1 개요
+CICD(Continuous Integration/Continuous Deployment) 환경은 다음 컴포넌트들로 구성됩니다:
+
+- Jenkins: 자동화된 빌드, 테스트, 배포 파이프라인 실행
+- GitLab: 소스 코드 관리 및 버전 관리
+- SonarQube: 코드 품질 분석
+- Nexus: 아티팩트 저장소
+
+### 8.2 사전 요구사항
+
+- Kubernetes 클러스터가 실행 중이어야 함
+- `kubectl` 명령어가 설정되어 있어야 함
+- 충분한 시스템 리소스 확보
+  ```yaml
+  최소 요구사항:
+  - CPU: 4 cores
+  - Memory: 8Gi
+  - Storage: 50Gi
+  ```
+
+### 8.3 설치 방법
+
+#### 8.3.1 자동 설치
+제공된 스크립트를 사용하여 모든 CICD 컴포넌트를 자동으로 설치할 수 있습니다:
+
+```bash
+./scripts/setup/08-setup-cicd.sh
+```
+
+이 스크립트는 다음 작업을 수행합니다:
+- CICD 네임스페이스 생성
+- Jenkins RBAC 설정
+- 필요한 데이터 디렉토리 생성
+- Jenkins, GitLab, SonarQube, Nexus 설치
+- 서비스 설정 및 상태 확인
+
+#### 8.3.2 수동 설치
+각 컴포넌트를 수동으로 설치하려면 다음 순서로 진행합니다:
+
+- 네임스페이스 생성:
+```bash
+kubectl create namespace egov-cicd
+```
+
+- Jenkins RBAC 설정:
+```bash
+kubectl apply -f manifests/egov-cicd/jenkins-rbac.yaml
+```
+
+- 데이터 디렉토리 생성:
+```bash
+export DATA_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.data_base_path}')
+mkdir -p ${DATA_BASE_PATH}/{jenkins,gitlab,sonarqube,nexus}
+chmod 777 ${DATA_BASE_PATH}/{jenkins,gitlab,sonarqube,nexus}
+```
+
+- 각 서비스 설치:
+```bash
+kubectl apply -f manifests/egov-cicd/jenkins-statefulset.yaml
+kubectl apply -f manifests/egov-cicd/gitlab-statefulset.yaml
+kubectl apply -f manifests/egov-cicd/sonarqube-deployment.yaml
+kubectl apply -f manifests/egov-cicd/nexus-statefulset.yaml
+kubectl apply -f manifests/egov-cicd/cicd-services.yaml
+```
+
+### 8.4 접근 정보
+
+설치가 완료된 후 각 서비스는 다음 주소로 접근 가능합니다:
+
+- Jenkins: http://localhost:30011
+- GitLab: http://localhost:30012
+- SonarQube: http://localhost:30013
+- Nexus: http://localhost:30014
+
+### 8.5 초기 설정
+
+#### 8.5.1 Jenkins
+- 초기 관리자 비밀번호 확인:
+```bash
+kubectl exec -n egov-cicd jenkins-0 -- cat /var/jenkins_home/secrets/initialAdminPassword
+```
+- 추천 플러그인 설치
+- 관리자 계정 생성
+- Kubernetes 플러그인 설정
+
+#### 8.5.2 GitLab
+- 초기 root 비밀번호 확인:
+```bash
+kubectl exec -n egov-cicd gitlab-0 -- cat /etc/gitlab/initial_root_password
+```
+- 프로젝트 생성 및 사용자 설정
+
+#### 8.5.3 SonarQube
+- 기본 관리자 계정으로 로그인 (admin/admin)
+- 새 비밀번호 설정
+- 프로젝트 설정 및 품질 게이트 구성
+
+#### 8.5.4 Nexus
+- 초기 관리자 비밀번호 확인:
+```bash
+kubectl exec -n egov-cicd nexus-0 -- cat /nexus-data/admin.password
+```
+- 저장소 설정
+- 사용자 권한 구성
+
+### 8.6 상태 확인
+
+설치된 서비스의 상태를 확인하려면:
+
+```bash
+kubectl get pods -n egov-cicd
+kubectl get svc -n egov-cicd
+```
+
+### 8.7 문제 해결
+
+일반적인 문제 해결 방법:
+
+- 파드 상태 확인:
+```bash
+kubectl describe pod <pod-name> -n egov-cicd
+```
+
+- 로그 확인:
+```bash
+kubectl logs <pod-name> -n egov-cicd
+```
+
+- 스토리지 권한 문제:
+```bash
+chmod -R 777 ${DATA_BASE_PATH}/{jenkins,gitlab,sonarqube,nexus}
+```
+
+- 서비스 재시작:
+```bash
+kubectl rollout restart statefulset/<service-name> -n egov-cicd
+```
+
+### 8.8 백업 및 복구
+
+중요 데이터의 백업을 위해 다음 디렉토리들을 주기적으로 백업하십시오:
+
+```bash
+${DATA_BASE_PATH}/jenkins    # Jenkins 설정 및 작업 이력
+${DATA_BASE_PATH}/gitlab     # GitLab 저장소 및 설정
+${DATA_BASE_PATH}/sonarqube  # SonarQube 분석 데이터
+${DATA_BASE_PATH}/nexus      # Nexus 저장소 데이터
+```
+
+## 9. 참고 자료
 
 - [전자정부 표준프레임워크 MSA 공통컴포넌트](https://github.com/egovframework/egovframe-common-components-msa-krds)
 - [Docker](https://www.docker.com/)

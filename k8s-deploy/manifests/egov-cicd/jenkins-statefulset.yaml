@@ -4,7 +4,7 @@ metadata:
   name: jenkins
   namespace: egov-cicd
 spec:
-  serviceName: jenkins
+  serviceName: jenkins-headless
   replicas: 1
   selector:
     matchLabels:
@@ -14,7 +14,7 @@ spec:
       labels:
         app: jenkins
     spec:
-      serviceAccountName: jenkins
+      serviceAccountName: jenkins-sa
       securityContext:
         fsGroup: 1000
       containers:

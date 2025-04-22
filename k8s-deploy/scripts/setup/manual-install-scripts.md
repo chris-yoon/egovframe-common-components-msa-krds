@@ -176,6 +176,17 @@ kubectl apply -f cicd-services.yaml
 kubectl rollout status statefulset/jenkins -n egov-cicd --timeout=300s
 ```
 
+## 9. PostgreSQL 설치
+
+```bash
+cd ../egov-db
+kubectl apply -f postgresql-secret.yaml
+envsubst '${DATA_BASE_PATH}' < postgresql-pv.yaml | kubectl apply -f -
+kubectl apply -f postgresql-statefulset.yaml
+kubectl apply -f postgresql-service.yaml
+kubectl rollout status statefulset/postgresql -n egov-db --timeout=300s
+```
+
 ## 설치 상태 확인
 
 ```bash

@@ -49,6 +49,7 @@ k8s-deploy/data/jenkins/
 k8s-deploy/data/gitlab/
 k8s-deploy/data/sonarqube/
 k8s-deploy/data/nexus/
+k8s-deploy/data/postgresql/
 istio-1.25.0/
 
 # Application specific

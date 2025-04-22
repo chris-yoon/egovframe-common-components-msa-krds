@@ -43,7 +43,7 @@ spec:
         - name: OPENSEARCH_PROTOCOL
           value: "http"  # https에서 http로 변경
         - name: OPENSEARCH_URL
-          value: "opensearch-internal.egov-db"  # 내부 서비스 주소 사용
+          value: "opensearch-0.opensearch-headless.egov-db"  # 내부 서비스 주소 사용
         - name: OPENSEARCH_PORT
           value: "9200"
         - name: DISABLE_SECURITY

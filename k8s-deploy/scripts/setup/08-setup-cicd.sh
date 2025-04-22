@@ -42,7 +42,7 @@ create_data_directories() {
     if [ -z "$DATA_BASE_PATH" ]; then
         echo -e "${RED}DATA_BASE_PATH not found in ConfigMap${NC}"
         exit 1
-    }
+    fi
 
     mkdir -p ${DATA_BASE_PATH}/{jenkins,harbor,sonarqube,nexus}
     chmod 777 ${DATA_BASE_PATH}/{jenkins,harbor,sonarqube,nexus}
@@ -59,10 +59,9 @@ echo -e "\n${YELLOW}Setting up RBAC for Jenkins...${NC}"
 kubectl apply -f ${BASE_DIR}/manifests/egov-cicd/jenkins-rbac.yaml
 check_error "Jenkins RBAC setup"
 
-# Jenkins 설치
-echo -e "\n${YELLOW}Installing Jenkins...${NC}"
-kubectl apply -f ${BASE_DIR}/manifests/egov-cicd/jenkins-service.yaml
-check_error "Jenkins service creation"
+# 데이터 디렉토리 생성
+create_data_directories
+check_error "Creating data directories"
 
 # Jenkins StatefulSet 배포
 echo -e "\n${YELLOW}Deploying Jenkins StatefulSet...${NC}"
@@ -93,7 +92,7 @@ check_error "CICD services setup"
 # 리소스 준비 대기
 echo -e "\n${YELLOW}Waiting for CICD resources to be ready...${NC}"
 wait_for_resource statefulset jenkins egov-cicd 300
-wait_for_resource statefulset harbor egov-cicd 300
+wait_for_resource statefulset gitlab egov-cicd 300
 wait_for_resource deployment sonarqube egov-cicd 300
 wait_for_resource statefulset nexus egov-cicd 300
 
@@ -105,7 +104,7 @@ kubectl exec -n egov-cicd jenkins-0 -- cat /var/jenkins_home/secrets/initialAdmi
 echo -e "\n${GREEN}CICD setup completed successfully!${NC}"
 echo -e "\n${BLUE}Access Information:${NC}"
 echo -e "Jenkins:   http://localhost:30011"
-echo -e "Harbor:    http://localhost:30012"
+echo -e "GitLab:    http://localhost:30012"
 echo -e "SonarQube: http://localhost:30013"
 echo -e "Nexus:     http://localhost:30014"
 

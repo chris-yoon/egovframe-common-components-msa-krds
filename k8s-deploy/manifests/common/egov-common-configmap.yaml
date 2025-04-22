@@ -5,7 +5,7 @@ metadata:
 data:
   # Database
   SPRING_DATASOURCE_DRIVER_CLASS_NAME: "com.mysql.cj.jdbc.Driver"
-  SPRING_DATASOURCE_URL: "jdbc:mysql://mysql.egov-db.svc.cluster.local:3306/com"
+  SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-0.mysql-headless.egov-db.svc.cluster.local:3306/com"
   
   # HikariCP
   SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "20"

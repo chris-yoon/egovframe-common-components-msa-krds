@@ -4,7 +4,7 @@ metadata:
   name: mysql
   namespace: egov-db
 spec:
-  serviceName: mysql
+  serviceName: mysql-headless
   replicas: 1
   selector:
     matchLabels:

@@ -4,7 +4,7 @@ metadata:
   name: gitlab
   namespace: egov-cicd
 spec:
-  serviceName: gitlab
+  serviceName: gitlab-headless
   replicas: 1
   selector:
     matchLabels:
@@ -14,9 +14,25 @@ spec:
       labels:
         app: gitlab
     spec:
+      securityContext:
+        fsGroup: 998  # git group
+      initContainers:
+      - name: init-gitlab
+        image: busybox
+        command: 
+        - /bin/sh
+        - -c
+        - |
+          mkdir -p /var/opt/gitlab/gitlab-workhorse/sockets
+          chmod -R 777 /var/opt/gitlab/gitlab-workhorse
+        volumeMounts:
+        - name: gitlab-workhorse
+          mountPath: /var/opt/gitlab/gitlab-workhorse
       containers:
       - name: gitlab
         image: gitlab/gitlab-ce:16.10.1-ce.0
+        securityContext:
+          privileged: true
         ports:
         - containerPort: 80
           name: http
@@ -27,36 +43,32 @@ spec:
         volumeMounts:
         - name: gitlab-config
           mountPath: /etc/gitlab
+        - name: gitlab-config-file
+          mountPath: /etc/gitlab/gitlab.rb
+          subPath: gitlab.rb
         - name: gitlab-logs
           mountPath: /var/log/gitlab
         - name: gitlab-data
           mountPath: /var/opt/gitlab
+        - name: gitlab-workhorse
+          mountPath: /var/opt/gitlab/gitlab-workhorse
+        - name: ssh-host-keys
+          mountPath: /etc/ssh
         resources:
           requests:
-            memory: "4Gi"
             cpu: "2"
+            memory: "6Gi"
           limits:
-            memory: "8Gi"
             cpu: "4"
-        livenessProbe:
-          httpGet:
-            path: /-/health
-            port: 80
-          initialDelaySeconds: 300
-          timeoutSeconds: 10
-          periodSeconds: 30
-        readinessProbe:
-          httpGet:
-            path: /-/health
-            port: 80
-          initialDelaySeconds: 300
-          timeoutSeconds: 10
-          periodSeconds: 30
+            memory: "12Gi"
       volumes:
       - name: gitlab-config
         hostPath:
           path: ${DATA_BASE_PATH}/gitlab/config
           type: DirectoryOrCreate
+      - name: gitlab-config-file
+        configMap:
+          name: gitlab-config
       - name: gitlab-logs
         hostPath:
           path: ${DATA_BASE_PATH}/gitlab/logs
@@ -64,4 +76,12 @@ spec:
       - name: gitlab-data
         hostPath:
           path: ${DATA_BASE_PATH}/gitlab/data
+          type: DirectoryOrCreate
+      - name: gitlab-workhorse
+        hostPath:
+          path: ${DATA_BASE_PATH}/gitlab/workhorse
+          type: DirectoryOrCreate
+      - name: ssh-host-keys
+        hostPath:
+          path: ${DATA_BASE_PATH}/gitlab/ssh
           type: DirectoryOrCreate

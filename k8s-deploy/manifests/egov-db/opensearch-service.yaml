@@ -4,6 +4,7 @@ metadata:
   name: opensearch
   namespace: egov-db
 spec:
+  type: NodePort
   selector:
     app: opensearch
   ports:
@@ -15,18 +16,17 @@ spec:
     port: 9600
     targetPort: 9600
     nodePort: 30960
-  type: NodePort
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: opensearch-internal
+  name: opensearch-headless
   namespace: egov-db
 spec:
+  clusterIP: None
   selector:
     app: opensearch
   ports:
   - name: http
     port: 9200
     targetPort: 9200
-  clusterIP: None

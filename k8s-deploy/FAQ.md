@@ -1,6 +1,5 @@
 # 자주하는 질문 (FAQ)
 
-이 FAQ는 전자정부 표준프레임워크의 Kubernetes 배포 환경에서 자주 묻는 질문에 대한 답변을 제공합니다.
 - [1. 기본 리소스](#1-기본-리소스)
 - [2. 스토리지](#2-스토리지)
 - [3. 네트워킹](#3-네트워킹)
@@ -184,6 +183,11 @@ spec:
    - 외부에서 접근 불가
    - 사용 예: 내부 API 서버
 
+- **Headless** (ClusterIP: None):
+   - StatefulSet Pod의 고정 네트워크 식별자 제공
+   - 로드밸런싱 없이 DNS 레코드만 생성
+   - 사용 예: MySQL, Kafka, Elasticsearch 클러스터
+
 - **NodePort**:
    - 모든 노드의 특정 포트로 노출
    - 포트 범위: 30000-32767
@@ -198,6 +202,149 @@ spec:
    - 외부 서비스에 대한 DNS 별칭
    - CNAME 레코드 생성
    - 사용 예: 외부 데이터베이스 연결
+
+### StatefulSet에서 Headless Service는 왜 필요한가요?
+
+StatefulSet에서 Headless Service는 각 Pod에 대한 고정된 네트워크 식별자를 제공하기 위해 사용됩니다.
+
+**일반 Service vs Headless Service**:
+
+- 일반 Service 사용 시:
+```yaml
+# 모든 Pod에 대한 단일 진입점
+mysql.egov-db.svc.cluster.local:3306
+```
+- 모든 Pod에 대한 로드밸런싱 제공
+- Primary/Secondary Pod 구분 불가
+- 특정 Pod 직접 지정 불가
+
+- Headless Service 사용 시:
+```yaml
+# 각 Pod별 고유한 DNS 엔트리
+mysql-0.mysql-headless.egov-db.svc.cluster.local:3306  # Primary
+mysql-1.mysql-headless.egov-db.svc.cluster.local:3306  # Secondary
+mysql-2.mysql-headless.egov-db.svc.cluster.local:3306  # Secondary
+```
+- 각 Pod에 대한 고정된 DNS 엔트리
+- Primary/Secondary 역할 명확히 구분
+- 복제 구성 시 정확한 타겟팅 가능
+
+**설정 예시**:
+
+- Headless Service:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-headless
+  namespace: egov-db
+spec:
+  clusterIP: None    # Headless Service 표시
+  ports:
+  - port: 3306
+  selector:
+    app: mysql
+```
+
+- StatefulSet:
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+spec:
+  serviceName: mysql-headless    # Headless Service 참조
+  replicas: 3
+  template:
+    spec:
+      containers:
+      - name: mysql
+        env:
+        - name: MYSQL_MASTER_HOST
+          value: "mysql-0.mysql-headless"    # Primary 호스트 지정
+```
+
+**주요 사용 사례**:
+
+- MySQL 복제 구성
+   - Primary (mysql-0): 읽기/쓰기 작업
+   - Secondary (mysql-1, mysql-2): 읽기 전용 작업
+
+- 백업 작업
+   - Secondary에서 백업 수행으로 Primary 부하 감소
+   ```bash
+   kubectl exec mysql-1 -n egov-db -- mysqldump -u root -p mydatabase > backup.sql
+   ```
+
+- 복제 모니터링
+   ```sql
+   -- Secondary에서 복제 상태 확인
+   SHOW SLAVE STATUS;
+   ```
+
+**권장 사항**:
+- 단일 MySQL 인스턴스만 사용하는 경우에도 향후 확장성을 위해 Headless Service 구성 권장
+- 복제 구성 시 반드시 Headless Service 사용
+- Service 이름은 용도를 명확히 구분 (예: mysql-headless)
+
+### MySQL은 왜 NodePort Service도 함께 사용하나요?
+
+MySQL StatefulSet은 두 가지 Service를 함께 사용합니다:
+
+- Headless Service (내부 통신용)
+   - StatefulSet Pod 간의 통신
+   - 복제 구성을 위한 고정 네트워크 식별자
+   - 클러스터 내부 애플리케이션의 접근
+
+- NodePort Service (외부 접근용)
+   - 개발 환경에서의 직접 접근
+   - 데이터베이스 관리 도구 연결
+   - 모니터링 및 운영 관리
+
+**설정 예시**:
+```yaml
+# Headless Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-headless
+spec:
+  clusterIP: None
+  ports:
+  - port: 3306
+  selector:
+    app: mysql
+---
+# NodePort Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  type: NodePort
+  ports:
+  - port: 3306
+    nodePort: 30306
+  selector:
+    app: mysql
+    statefulset.kubernetes.io/pod-name: mysql-0
+```
+
+- 위 예시에서 headless service와 nodeport service 는 서로 독립적으로 동작합니다.
+- 외부에서 노드IP:30306 으로 접근하면 모든 mysql pod에 로드밸런싱으로 접근이 가능하여 읽기전용인 mysql-1, mysql-2에 접근하게 될 수도 있습니다.
+- 노드포트의 경우 읽기 전용이 아닌 master pod(mysql-0)만 접근이 가능하도록 selector를 지정합니다.
+- 내부에서 mysql-0에 접근하는 경우는 headless service를 사용합니다. `jdbc:mysql://mysql-0.mysql-headless.egov-db:3306/com`
+
+**사용 시나리오**:
+- 개발자: NodePort를 통한 직접 DB 접근
+- 애플리케이션: Headless Service를 통한 내부 통신
+- 운영자: NodePort를 통한 모니터링 및 관리
+
+**주의사항**:
+- NodePort는 개발 환경에서만 사용 권장
+- 프로덕션 환경에서는 보안을 위해 내부 접근만 허용
+- NodePort 노출 시 네트워크 보안 정책 필수
+
 
 ### 리소스 요청(requests)과 제한(limits)은 어떻게 설정하나요?
 
@@ -1904,6 +2051,128 @@ spec:
 - NetworkPolicy
 - TLS/SSL 설정
 
+### Role과 ClusterRole의 차이는 무엇인가요?
+
+`Role`과 `ClusterRole`은 Kubernetes의 RBAC(Role-Based Access Control) 시스템에서 권한을 정의하는 리소스입니다. 두 리소스는 비슷한 목적으로 사용되지만 중요한 차이가 있습니다:
+
+**Role**:
+- 네임스페이스 범위로 제한됨
+- 지정된 네임스페이스 내의 리소스에만 권한 부여 가능
+- 예시:
+  ```yaml
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: Role
+  metadata:
+    name: jenkins
+    namespace: egov-cicd  # 특정 네임스페이스로 제한됨
+  rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create","delete","get","list","patch","update","watch"]
+  ```
+
+**ClusterRole**:
+- 클러스터 전체 범위에서 작동
+- 모든 네임스페이스에 걸쳐 권한 부여 가능
+- 네임스페이스에 속하지 않는 리소스(노드, PV 등)에 대한 권한 부여 가능
+- 예시:
+  ```yaml
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    name: jenkins-cluster-role  # 네임스페이스 지정 없음
+  rules:
+  - apiGroups: [""]
+    resources: ["pods", "nodes", "persistentvolumes"]
+    verbs: ["create","delete","get","list","patch","update","watch"]
+  ```
+
+**주요 차이점**:
+
+- **범위**:
+   - `Role`: 단일 네임스페이스
+   - `ClusterRole`: 클러스터 전체
+
+- **사용 사례**:
+   - `Role`: 특정 네임스페이스 내 리소스 관리
+   - `ClusterRole`: 클러스터 전체 리소스 관리 또는 네임스페이스에 속하지 않는 리소스 관리
+
+- **바인딩**:
+   - `Role` → `RoleBinding`
+   - `ClusterRole` → `ClusterRoleBinding` 또는 `RoleBinding`
+
+**선택 기준**:
+- 특정 네임스페이스 내의 리소스만 관리하는 경우 → `Role` 사용
+- 여러 네임스페이스의 리소스를 관리하는 경우 → `ClusterRole` 사용
+- 노드, PV 같은 클러스터 수준 리소스를 관리하는 경우 → `ClusterRole` 사용
+
+**보안 고려사항**:
+- 최소 권한 원칙에 따라 필요한 범위만큼만 권한을 부여
+- 가능한 한 `ClusterRole` 대신 `Role` 사용을 고려
+- 권한 범위를 명확히 정의하고 문서화
+
+### ServiceAccount는 어떤 경우에 사용하나요?
+
+ServiceAccount는 Pod가 Kubernetes API와 상호작용할 때 사용하는 인증 수단입니다:
+
+**주요 사용 사례**:
+- CI/CD 도구 (Jenkins, GitLab)
+- 모니터링 도구 (Prometheus)
+- 커스텀 컨트롤러나 오퍼레이터
+- 자동화 스크립트
+
+**설정 예시**:
+```yaml
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jenkins-sa
+  namespace: egov-cicd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jenkins-cluster-role
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["create","delete","get","list","patch","update","watch"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create","delete","get","list","patch","update","watch"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get","list","watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jenkins-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: jenkins-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: jenkins-sa
+  namespace: egov-cicd
+
+```
+
+- egov-cicd 네임스페이스의 jenkins-sa ServiceAccount는 다음과 같은 권한을 갖습니다:
+  - `ClusterRole`이므로 모든 네임스페이스의 Pod에 대한 권한
+  - Pod 생성, 삭제, 조회, 수정, 모니터링
+  - Pod 내 명령어 실행
+  - Pod 로그 조회
+
+**주의사항**:
+- 기본 ServiceAccount는 제한된 권한만 가짐
+- 필요한 경우에만 추가 권한 부여
+- 권한은 명시적으로 정의하고 문서화
+- 정기적으로 사용하지 않는 ServiceAccount 제거
+
+
 ## 8. 배포와 관리
 - CI/CD 파이프라인
 - GitOps
@@ -2091,3 +2360,35 @@ spring:
 **권장 사항**:
 - 일관성을 위해 한 프로젝트 내에서는 동일한 방식 사용
 - 팀 내 컨벤션을 정하고 문서화하여 유지보수성 확보
+
+### DNS 문제를 해결하기 위해 어떤 단계를 거쳐야 하나요?
+
+DNS 문제를 해결하기 위해 다음 단계를 거치면 됩니다:
+
+1. **DNS 설정 확인**:
+   - `/etc/resolv.conf` 파일 확인
+   - DNS 서버 주소, 검색 도메인 등 확인
+   ```bash
+   kubectl run -it --rm debug --image=nicolaka/netshoot -- bash 
+   cat /etc/resolv.conf
+   ```
+
+2. **기본 kubernetes 서비스 조회 테스트**:
+   - `kubernetes.default.svc.cluster.local` 조회
+   ```bash
+   dig kubernetes.default.svc.cluster.local
+   ```
+
+3. **MySQL 서비스 DNS 조회**:
+   - Headless 서비스 (`mysql-headless.egov-db.svc.cluster.local`) 조회
+   - StatefulSet Pod (`mysql-0.mysql-headless.egov-db.svc.cluster.local`) 조회
+   ```bash
+   dig mysql-headless.egov-db.svc.cluster.local
+   dig mysql-0.mysql-headless.egov-db.svc.cluster.local
+   ```
+
+4. **네트워크 연결 테스트**:
+   - MySQL 포트 (`3306`)로 연결 테스트
+   ```bash
+   nc -zv mysql-0.mysql-headless.egov-db.svc.cluster.local 3306
+   ```

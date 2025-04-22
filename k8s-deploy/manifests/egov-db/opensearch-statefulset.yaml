@@ -4,7 +4,7 @@ metadata:
   name: opensearch
   namespace: egov-db
 spec:
-  serviceName: opensearch-internal
+  serviceName: opensearch-headless
   replicas: 1
   selector:
     matchLabels:
