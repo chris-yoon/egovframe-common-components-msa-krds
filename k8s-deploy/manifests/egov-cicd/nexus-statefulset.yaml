@@ -51,7 +51,38 @@ spec:
       volumes:
       - name: nexus-data
         hostPath:
-          path: ${DATA_BASE_PATH}/nexus
+          path: /Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/nexus
           type: DirectoryOrCreate
       securityContext:
         fsGroup: 200
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexus-headless
+  namespace: egov-cicd
+spec:
+  clusterIP: None
+  ports:
+    - port: 8081
+  selector:
+    app: nexus
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexus
+  namespace: egov-cicd
+spec:
+  type: NodePort
+  ports:
+    - port: 8081
+      targetPort: 8081
+      nodePort: 30014
+  selector:
+    app: nexus
+    statefulset.kubernetes.io/pod-name: nexus-0

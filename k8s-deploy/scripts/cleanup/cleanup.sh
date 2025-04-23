@@ -49,27 +49,15 @@ verify_infrastructure_cleanup() {
     return 0
 }
 
-# 함수: MySQL 정리 확인
-verify_mysql_cleanup() {
-    echo -e "${YELLOW}Verifying MySQL cleanup...${NC}"
-    if kubectl get statefulset mysql -n egov-db >/dev/null 2>&1; then
-        echo -e "${RED}MySQL statefulset still exists${NC}"
+# 함수: Database 정리 확인
+verify_db_cleanup() {
+    echo -e "${YELLOW}Verifying Database cleanup...${NC}"
+    if kubectl get statefulset -n egov-db >/dev/null 2>&1 || kubectl get pvc -n egov-db >/dev/null 2>&1; then
+        echo -e "${RED}Database statefulset or PVC still exists${NC}"
         return 1
     fi
     
-    echo -e "${GREEN}MySQL cleanup verified successfully${NC}"
-    return 0
-}
-
-# 함수: OpenSearch 정리 확인
-verify_opensearch_cleanup() {
-    echo -e "${YELLOW}Verifying OpenSearch cleanup...${NC}"
-    if kubectl get statefulset opensearch -n egov-db >/dev/null 2>&1; then
-        echo -e "${RED}OpenSearch statefulset still exists${NC}"
-        return 1
-    fi
-    
-    echo -e "${GREEN}OpenSearch cleanup verified successfully${NC}"
+    echo -e "${GREEN}Database cleanup verified successfully${NC}"
     return 0
 }
 
@@ -152,52 +140,46 @@ verify_cicd_cleanup() {
 echo -e "${YELLOW}Starting cleanup process...${NC}"
 
 # 1. Applications 정리
-echo -e "\n${YELLOW}[1/8] Cleaning up Applications...${NC}"
+echo -e "\n${YELLOW}[1/7] Cleaning up Applications...${NC}"
 ${SCRIPT_DIR}/01-cleanup-applications.sh
 check_error "Applications cleanup"
 verify_applications_cleanup
 
 # 2. Infrastructure 정리
-echo -e "\n${YELLOW}[2/8] Cleaning up Infrastructure...${NC}"
+echo -e "\n${YELLOW}[2/7] Cleaning up Infrastructure...${NC}"
 ${SCRIPT_DIR}/02-cleanup-infrastructure.sh
 check_error "Infrastructure cleanup"
 verify_infrastructure_cleanup
 
-# 3. MySQL 정리
-echo -e "\n${YELLOW}[3/8] Cleaning up MySQL...${NC}"
-${SCRIPT_DIR}/03-cleanup-mysql.sh
-check_error "MySQL cleanup"
-verify_mysql_cleanup
+# 3. Database 정리
+echo -e "\n${YELLOW}[3/7] Cleaning up Database...${NC}"
+${SCRIPT_DIR}/03-cleanup-db.sh
+check_error "Database cleanup"
+verify_db_cleanup
 
-# 4. OpenSearch 정리
-echo -e "\n${YELLOW}[4/8] Cleaning up OpenSearch...${NC}"
-${SCRIPT_DIR}/04-cleanup-opensearch.sh
-check_error "OpenSearch cleanup"
-verify_opensearch_cleanup
+# 4. CICD 정리
+echo -e "\n${YELLOW}[4/7] Cleaning up CICD...${NC}"
+${SCRIPT_DIR}/04-cleanup-cicd.sh
+check_error "CICD cleanup"
+verify_cicd_cleanup
 
 # 5. Monitoring 정리
-echo -e "\n${YELLOW}[5/8] Cleaning up Monitoring...${NC}"
+echo -e "\n${YELLOW}[5/7] Cleaning up Monitoring...${NC}"
 ${SCRIPT_DIR}/05-cleanup-monitoring.sh
 check_error "Monitoring cleanup"
 verify_monitoring_cleanup
 
 # 6. Namespaces 정리
-echo -e "\n${YELLOW}[6/8] Cleaning up Namespaces...${NC}"
+echo -e "\n${YELLOW}[6/7] Cleaning up Namespaces...${NC}"
 ${SCRIPT_DIR}/06-cleanup-namespaces.sh
 check_error "Namespaces cleanup"
 verify_namespaces_cleanup
 
 # 7. Istio 정리
-echo -e "\n${YELLOW}[7/8] Cleaning up Istio...${NC}"
+echo -e "\n${YELLOW}[7/7] Cleaning up Istio...${NC}"
 ${SCRIPT_DIR}/07-cleanup-istio.sh
 check_error "Istio cleanup"
 verify_istio_cleanup
-
-# 8. CICD 정리
-echo -e "\n${YELLOW}[8/8] Cleaning up CICD...${NC}"
-${SCRIPT_DIR}/08-cleanup-cicd.sh
-check_error "CICD cleanup"
-verify_cicd_cleanup
 
 # 최종 상태 확인
 echo -e "\n${YELLOW}Final Status Check:${NC}"

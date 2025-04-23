@@ -1,3 +1,44 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jenkins-sa
+  namespace: egov-cicd
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jenkins-cluster-role
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["create","delete","get","list","patch","update","watch"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create","delete","get","list","patch","update","watch"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get","list","watch"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jenkins-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: jenkins-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: jenkins-sa
+  namespace: egov-cicd
+
+---
+
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -43,5 +84,43 @@ spec:
       volumes:
       - name: jenkins-home
         hostPath:
-          path: ${DATA_BASE_PATH}/jenkins
+          path: /Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/jenkins
           type: DirectoryOrCreate
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-headless
+  namespace: egov-cicd
+spec:
+  clusterIP: None
+  ports:
+  - port: 8080
+  selector:
+    app: jenkins
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins
+  namespace: egov-cicd
+  labels:
+    app: jenkins
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      nodePort: 30011  # Jenkins Web UI용 포트
+    - name: agent
+      port: 50000
+      targetPort: 50000
+      nodePort: 30010  # Jenkins Agent 연결용 포트
+  selector:
+    app: jenkins
+    statefulset.kubernetes.io/pod-name: jenkins-0

@@ -1,3 +1,44 @@
+# Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgresql-secret
+  namespace: egov-db
+type: Opaque
+data:
+  POSTGRES_USER: Z2l0bGFi
+  POSTGRES_PASSWORD: Z2l0bGFiLXBhc3N3b3Jk
+  POSTGRES_DB: Z2l0bGFiaHFfcHJvZHVjdGlvbg==
+---
+# Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-headless
+  namespace: egov-db
+spec:
+  clusterIP: None
+  ports:
+  - port: 5432
+  selector:
+    app: postgresql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql
+  namespace: egov-db
+spec:
+  type: NodePort
+  ports:
+  - port: 5432
+    targetPort: 5432
+    nodePort: 30432
+  selector:
+    app: postgresql
+    statefulset.kubernetes.io/pod-name: postgresql-0
+---
+# StatefulSet
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -14,9 +55,16 @@ spec:
       labels:
         app: postgresql
     spec:
+      securityContext:
+        fsGroup: 999
+        runAsUser: 999
+        runAsGroup: 999
       containers:
       - name: postgresql
         image: postgres:15.4
+        env:
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
         ports:
         - containerPort: 5432
           name: postgresql
@@ -33,24 +81,6 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
-        livenessProbe:
-          exec:
-            command:
-            - pg_isready
-            - -U
-            - gitlab
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-        readinessProbe:
-          exec:
-            command:
-            - pg_isready
-            - -U
-            - gitlab
-          initialDelaySeconds: 5
-          periodSeconds: 2
-          timeoutSeconds: 1
       volumes:
       - name: postgresql-data
         persistentVolumeClaim:

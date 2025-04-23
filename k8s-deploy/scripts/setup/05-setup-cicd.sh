@@ -28,7 +28,20 @@ wait_for_resource() {
     local timeout=$4
 
     echo -e "${YELLOW}Waiting for ${resource_type} ${resource_name} to be ready...${NC}"
-    kubectl wait --for=condition=Ready ${resource_type}/${resource_name} -n ${namespace} --timeout=${timeout}s
+    
+    case ${resource_type} in
+        "statefulset")
+            kubectl wait --for=jsonpath='{.status.availableReplicas}'=1 ${resource_type}/${resource_name} -n ${namespace} --timeout=${timeout}s
+            ;;
+        "deployment"|"pod")
+            kubectl wait --for=condition=Ready pods -l app=${resource_name} -n ${namespace} --timeout=${timeout}s
+            ;;
+        *)
+            echo -e "${RED}Unknown resource type: ${resource_type}${NC}"
+            return 1
+            ;;
+    esac
+    
     check_error "waiting for ${resource_type} ${resource_name}"
 }
 
@@ -54,40 +67,29 @@ create_data_directories() {
 echo -e "\n${YELLOW}Creating egov-cicd namespace...${NC}"
 kubectl create namespace egov-cicd 2>/dev/null || true
 
-# RBAC 설정
-echo -e "\n${YELLOW}Setting up RBAC for Jenkins...${NC}"
-kubectl apply -f ${BASE_DIR}/manifests/egov-cicd/jenkins-rbac.yaml
-check_error "Jenkins RBAC setup"
-
 # 데이터 디렉토리 생성
 create_data_directories
 check_error "Creating data directories"
 
 # Jenkins StatefulSet 배포
 echo -e "\n${YELLOW}Deploying Jenkins StatefulSet...${NC}"
-export DATA_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.data_base_path}')
-envsubst < ${BASE_DIR}/manifests/egov-cicd/jenkins-statefulset.yaml | kubectl apply -f -
+kubectl apply -f ${BASE_DIR}/manifests/egov-cicd/jenkins-statefulset.yaml
 check_error "Jenkins statefulset deployment"
 
 # GitLab 설치
 echo -e "\n${YELLOW}Installing GitLab...${NC}"
-envsubst < ${BASE_DIR}/manifests/egov-cicd/gitlab-statefulset.yaml | kubectl apply -f -
+kubectl apply -f ${BASE_DIR}/manifests/egov-cicd/gitlab-statefulset.yaml
 check_error "GitLab installation"
 
 # SonarQube 설치
 echo -e "\n${YELLOW}Installing SonarQube...${NC}"
-envsubst < ${BASE_DIR}/manifests/egov-cicd/sonarqube-deployment.yaml | kubectl apply -f -
+kubectl apply -f ${BASE_DIR}/manifests/egov-cicd/sonarqube-deployment.yaml
 check_error "SonarQube installation"
 
 # Nexus 설치
 echo -e "\n${YELLOW}Installing Nexus...${NC}"
-envsubst < ${BASE_DIR}/manifests/egov-cicd/nexus-statefulset.yaml | kubectl apply -f -
+kubectl apply -f ${BASE_DIR}/manifests/egov-cicd/nexus-statefulset.yaml
 check_error "Nexus installation"
-
-# 서비스 설정
-echo -e "\n${YELLOW}Setting up CICD services...${NC}"
-kubectl apply -f ${BASE_DIR}/manifests/egov-cicd/cicd-services.yaml
-check_error "CICD services setup"
 
 # 리소스 준비 대기
 echo -e "\n${YELLOW}Waiting for CICD resources to be ready...${NC}"

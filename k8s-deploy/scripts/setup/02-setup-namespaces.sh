@@ -34,6 +34,9 @@ create_namespace "egov-app"          # 애플리케이션 서비스용
 # 데이터베이스 네임스페이스
 create_namespace "egov-db"           # 데이터베이스용
 
+# CICD 네임스페이스
+create_namespace "egov-cicd"         # CICD 도구용
+
 # 모니터링 네임스페이스
 create_namespace "egov-monitoring"   # 모니터링 도구용
 

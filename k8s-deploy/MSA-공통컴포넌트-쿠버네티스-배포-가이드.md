@@ -207,12 +207,10 @@ k8s-deploy/
 │   │   ├── egov-common-configmap.yaml       # 공통 환경 변수 설정 파일
 │   │   └── egov-global-configmap.yaml       # 전역 환경 변수 설정 파일
 │   ├── egov-cicd/          # CICD 서비스 매니페스트
-│   │   ├── jenkins-rbac.yaml       # Jenkins RBAC 설정 파일
 │   │   ├── jenkins-statefulset.yaml  # Jenkins StatefulSet 설정 파일
 │   │   ├── gitlab-statefulset.yaml  # GitLab StatefulSet 설정 파일
 │   │   ├── sonarqube-deployment.yaml  # SonarQube 배포 파일
 │   │   ├── nexus-statefulset.yaml  # Nexus StatefulSet 설정 파일
-│   │   └── cicd-services.yaml  # CICD 서비스 설정 파일
 │   ├── egov-app/           # 애플리케이션 서비스 매니페스트
 │   │   ├── egov-author-deployment.yaml       # EgovAuthor 배포 파일
 │   │   ├── egov-board-deployment.yaml       # EgovBoard 배포 파일
@@ -1358,11 +1356,6 @@ CICD(Continuous Integration/Continuous Deployment) 환경은 다음 컴포넌트
 kubectl create namespace egov-cicd
 ```
 
-- Jenkins RBAC 설정:
-```bash
-kubectl apply -f manifests/egov-cicd/jenkins-rbac.yaml
-```
-
 - 데이터 디렉토리 생성:
 ```bash
 export DATA_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.data_base_path}')
@@ -1376,7 +1369,6 @@ kubectl apply -f manifests/egov-cicd/jenkins-statefulset.yaml
 kubectl apply -f manifests/egov-cicd/gitlab-statefulset.yaml
 kubectl apply -f manifests/egov-cicd/sonarqube-deployment.yaml
 kubectl apply -f manifests/egov-cicd/nexus-statefulset.yaml
-kubectl apply -f manifests/egov-cicd/cicd-services.yaml
 ```
 
 ### 8.4 접근 정보

@@ -104,24 +104,17 @@ kubectl wait --for=condition=Ready pods --all -n egov-monitoring --timeout=300s
 
 ```bash
 cd ../egov-db
-envsubst '${DATA_BASE_PATH}' < mysql-pv.yaml | kubectl apply -f -
-kubectl apply -f mysql-secret.yaml
-kubectl apply -f mysql-statefulset.yaml
-kubectl apply -f mysql-service.yaml
-kubectl rollout status statefulset/mysql -n egov-db --timeout=300s
+kubectl apply -f mysql.yaml
+kubectl rollout status statefulset/mysql -n egov-db --timeout=600s
 ```
 
 ## 5. OpenSearch 설치
 
 ```bash
-envsubst '${DATA_BASE_PATH}' < opensearch-pv.yaml | kubectl apply -f -
-kubectl apply -f opensearch-configmap.yaml
-kubectl apply -f opensearch-secret.yaml
-kubectl apply -f opensearch-certs-secret.yaml
-kubectl apply -f opensearch-statefulset.yaml
-kubectl apply -f opensearch-service.yaml
-kubectl apply -f opensearch-dashboard-deployment.yaml
+kubectl apply -f opensearch.yaml
+kubectl apply -f opensearch-dashboard.yaml
 kubectl rollout status statefulset/opensearch -n egov-db --timeout=300s
+kubectl rollout status deployment/opensearch-dashboards -n egov-db --timeout=300s
 ```
 
 ## 6. 인프라 서비스 설치
@@ -166,25 +159,26 @@ kubectl apply -f egov-search-deployment.yaml
 
 ```bash
 cd ../egov-cicd
-kubectl apply -f jenkins-rbac.yaml
 export DATA_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.data_base_path}')
 envsubst '${DATA_BASE_PATH}' < jenkins-statefulset.yaml | kubectl apply -f -
-envsubst '${DATA_BASE_PATH}' < gitlab-statefulset.yaml | kubectl apply -f -
 envsubst '${DATA_BASE_PATH}' < sonarqube-deployment.yaml | kubectl apply -f -
 envsubst '${DATA_BASE_PATH}' < nexus-statefulset.yaml | kubectl apply -f -
-kubectl apply -f cicd-services.yaml
 kubectl rollout status statefulset/jenkins -n egov-cicd --timeout=300s
 ```
 
-## 9. PostgreSQL 설치
+## 9. PostgreSQL, Redis, GitLab 설치
 
 ```bash
 cd ../egov-db
-kubectl apply -f postgresql-secret.yaml
-envsubst '${DATA_BASE_PATH}' < postgresql-pv.yaml | kubectl apply -f -
-kubectl apply -f postgresql-statefulset.yaml
-kubectl apply -f postgresql-service.yaml
+export DATA_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.data_base_path}')
+envsubst '${DATA_BASE_PATH}' < postgresql.yaml | kubectl apply -f -
+envsubst '${DATA_BASE_PATH}' < redis.yaml | kubectl apply -f -
 kubectl rollout status statefulset/postgresql -n egov-db --timeout=300s
+kubectl rollout status statefulset/redis -n egov-db --timeout=300s
+
+cd ../egov-cicd
+export DATA_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.data_base_path}')
+envsubst '${DATA_BASE_PATH}' < gitlab-statefulset.yaml | kubectl apply -f -
 ```
 
 ## 설치 상태 확인

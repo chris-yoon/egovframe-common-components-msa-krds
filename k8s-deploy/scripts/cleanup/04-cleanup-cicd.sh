@@ -23,9 +23,11 @@ echo -e "${YELLOW}Starting CICD cleanup process...${NC}"
 
 # Jenkins 제거
 echo -e "\n${YELLOW}Removing Jenkins...${NC}"
+kubectl delete serviceaccount jenkins-sa -n egov-cicd --ignore-not-found=true
+kubectl delete clusterrole jenkins-cluster-role --ignore-not-found=true
+kubectl delete clusterrolebinding jenkins-cluster-role-binding --ignore-not-found=true
 kubectl delete statefulset jenkins -n egov-cicd --ignore-not-found=true
 kubectl delete service jenkins -n egov-cicd --ignore-not-found=true
-kubectl delete -f ${BASE_DIR}/manifests/egov-cicd/jenkins-rbac.yaml --ignore-not-found=true
 
 # GitLab 제거
 echo -e "\n${YELLOW}Removing GitLab...${NC}"
@@ -42,12 +44,24 @@ echo -e "\n${YELLOW}Removing Nexus...${NC}"
 kubectl delete statefulset nexus -n egov-cicd --ignore-not-found=true
 kubectl delete service nexus -n egov-cicd --ignore-not-found=true
 
+# PostgreSQL 제거
+echo -e "\n${YELLOW}Removing PostgreSQL...${NC}"
+kubectl delete statefulset postgresql -n egov-db --ignore-not-found=true
+kubectl delete service postgresql -n egov-db --ignore-not-found=true
+
+# Redis 제거
+echo -e "\n${YELLOW}Removing Redis...${NC}"
+kubectl delete statefulset redis -n egov-db --ignore-not-found=true
+kubectl delete service redis -n egov-db --ignore-not-found=true
+
 # PVC 제거
 echo -e "\n${YELLOW}Removing Persistent Volume Claims...${NC}"
 kubectl delete pvc -l app=jenkins -n egov-cicd --ignore-not-found=true
 kubectl delete pvc -l app=gitlab -n egov-cicd --ignore-not-found=true
 kubectl delete pvc -l app=nexus -n egov-cicd --ignore-not-found=true
 kubectl delete pvc -l app=sonarqube -n egov-cicd --ignore-not-found=true
+kubectl delete pvc -l app=postgresql -n egov-db --ignore-not-found=true
+kubectl delete pvc -l app=redis -n egov-db --ignore-not-found=true
 
 # ConfigMaps 제거
 echo -e "\n${YELLOW}Removing ConfigMaps...${NC}"

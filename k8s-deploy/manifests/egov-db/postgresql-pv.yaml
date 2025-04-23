@@ -6,15 +6,17 @@ metadata:
     type: local
 spec:
   capacity:
-    storage: 10Gi
+    storage: 1Gi
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   storageClassName: standard
   hostPath:
-    path: "${DATA_BASE_PATH}/postgresql"
+    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/postgresql"
     type: DirectoryOrCreate
+
 ---
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -25,6 +27,6 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
+      storage: 1Gi
   storageClassName: standard
   volumeName: postgresql-pv-0

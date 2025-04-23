@@ -203,6 +203,53 @@ spec:
    - CNAME 레코드 생성
    - 사용 예: 외부 데이터베이스 연결
 
+### LoadBalancer 타입 Service의 포트는 어떻게 동작하나요?
+
+LoadBalancer 타입의 Service는 세 가지 포트 매핑을 가집니다. 예를 들어 `gateway-server` 서비스의 경우:
+
+```bash
+$ kubectl get svc -n egov-infra
+NAME             TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+gateway-server   LoadBalancer   10.103.170.195   localhost     9000:31920/TCP   3m1s
+```
+
+- **port (9000)**: LoadBalancer의 포트
+  - 외부에서 접근하는 포트
+  - `http://localhost:9000`으로 접근
+
+- **targetPort (80)**: 컨테이너의 포트
+  - Pod 내부에서 실제 서비스가 실행되는 포트
+  - Service 설정의 `targetPort` 필드로 지정
+
+- **nodePort (31920)**: 노드의 포트
+  - 자동 할당된 NodePort (범위: 30000-32767)
+  - 모든 노드에서 동일한 포트로 접근 가능
+  - `http://<노드IP>:31920`으로 접근
+
+**설정 예시**:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-server
+  namespace: egov-infra
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    port: 9000        # LoadBalancer 포트
+    targetPort: 80    # 컨테이너 포트
+    # nodePort: 32000 # NodePort를 고정하고 싶은 경우 (선택사항)
+    protocol: TCP
+  selector:
+    app: gateway-server
+```
+
+**주의사항**:
+- NodePort는 자동 할당을 권장 (포트 충돌 방지)
+- 로컬 개발 환경에서는 LoadBalancer가 `localhost`로 자동 매핑됨
+- 프로덕션 환경에서는 클라우드 제공자의 실제 LoadBalancer가 할당됨
+
 ### StatefulSet에서 Headless Service는 왜 필요한가요?
 
 StatefulSet에서 Headless Service는 각 Pod에 대한 고정된 네트워크 식별자를 제공하기 위해 사용됩니다.
@@ -1092,6 +1139,39 @@ volumeClaimTemplates:
 - RBAC 통합
 - 스토리지 정책 적용 가능
 - 암호화 지원
+
+### PV와 PVC를 재생성할 때 주의사항은 무엇인가요?
+
+**PV (PersistentVolume) 재생성**:
+- PV는 삭제하지 않고 다시 생성(apply)해도 문제되지 않음
+- 동일한 `metadata.name`을 가진 PV는 업데이트로 처리됨
+- 클러스터 수준 리소스이므로 기존 스펙으로 업데이트만 수행
+
+예시:
+```bash
+# 기존 PV가 있어도 안전하게 적용 가능
+kubectl apply -f k8s-deploy/manifests/egov-db/postgresql.yaml
+```
+
+**PVC (PersistentVolumeClaim) 재생성**:
+- PVC는 반드시 기존 것을 먼저 삭제한 후 재생성해야 함
+- 삭제하지 않고 재생성 시도하면 Pending 상태로 남음
+- 네임스페이스 범위 리소스이며 PV와의 바인딩 정보를 가짐
+
+올바른 PVC 재생성 순서:
+```bash
+# 1. 기존 PVC 삭제
+kubectl delete pvc postgresql-data-0 -n egov-db
+
+# 2. 새 PVC 생성
+kubectl apply -f k8s-deploy/manifests/egov-db/postgresql.yaml
+```
+
+**주의사항**:
+- PVC 삭제 시 연결된 데이터는 PV의 `persistentVolumeReclaimPolicy` 설정에 따라 처리됨
+- `Retain` 정책의 경우 PV의 데이터는 보존됨
+- 운영 환경에서는 데이터 백업 후 진행 권장
+
 
 ## 3. 네트워킹
 - Service Discovery
@@ -2365,7 +2445,7 @@ spring:
 
 DNS 문제를 해결하기 위해 다음 단계를 거치면 됩니다:
 
-1. **DNS 설정 확인**:
+- **DNS 설정 확인**:
    - `/etc/resolv.conf` 파일 확인
    - DNS 서버 주소, 검색 도메인 등 확인
    ```bash
@@ -2373,7 +2453,7 @@ DNS 문제를 해결하기 위해 다음 단계를 거치면 됩니다:
    cat /etc/resolv.conf
    ```
 
-2. **기본 kubernetes 서비스 조회 테스트**:
+- **기본 kubernetes 서비스 조회 테스트**:
    - `kubernetes.default.svc.cluster.local` 조회
    ```bash
    dig kubernetes.default.svc.cluster.local
@@ -2392,3 +2472,150 @@ DNS 문제를 해결하기 위해 다음 단계를 거치면 됩니다:
    ```bash
    nc -zv mysql-0.mysql-headless.egov-db.svc.cluster.local 3306
    ```
+
+
+### hostPath와 volumeClaimTemplates의 차이점
+
+**1. 기본 개념**:
+
+hostPath:
+- 노드의 파일시스템을 직접 마운트
+- 특정 노드의 로컬 경로를 컨테이너에 연결
+- 단순하고 직접적인 방식
+
+volumeClaimTemplates:
+- 동적으로 PVC를 생성하는 템플릿
+- StatefulSet의 각 Pod마다 독립적인 스토리지 제공
+- 추상화된 스토리지 관리 방식
+
+**2. 구현 예시**:
+
+hostPath 예시:
+```yaml
+apiVersion: v1
+kind: Pod
+spec:
+  volumes:
+  - name: data
+    hostPath:
+      path: /data/mysql
+      type: DirectoryOrCreate
+  containers:
+  - name: mysql
+    volumeMounts:
+    - name: data
+      mountPath: /var/lib/mysql
+```
+
+volumeClaimTemplates 예시:
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+spec:
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+```
+
+**3. 주요 차이점**:
+
+- **스케일링**:
+   - hostPath: 
+     - 모든 Pod가 동일 경로 공유
+     - 다중 Pod 실행 시 데이터 충돌 위험
+     - 노드 간 데이터 공유 불가
+   
+   - volumeClaimTemplates:
+     - Pod마다 독립적인 PVC 생성
+     - 자동 스케일링 지원
+     - 클러스터 전체에서 데이터 접근 가능
+
+- **데이터 지속성**:
+   - hostPath:
+     - 노드 종속적
+     - 노드 장애 시 데이터 손실 위험
+     - 수동 백업/복구 필요
+   
+   - volumeClaimTemplates:
+     - 노드 독립적
+     - 자동 데이터 보존
+     - 클라우드 스토리지 통합 가능
+
+- **이식성**:
+   - hostPath:
+     - 특정 노드에 종속
+     - 환경 간 이동 어려움
+     - 로컬 개발에 적합
+   
+   - volumeClaimTemplates:
+     - 클라우드 중립적
+     - 환경 간 이동 용이
+     - 프로덕션 환경에 적합
+
+- **관리**:
+   - hostPath:
+     - 단순한 설정
+     - 직접적인 파일시스템 접근
+     - 제한된 관리 기능
+   
+   - volumeClaimTemplates:
+     - 동적 프로비저닝
+     - 스토리지 클래스 활용
+     - 고급 관리 기능 제공
+
+**4. 사용 시나리오**:
+
+hostPath 적합:
+- 로컬 개발 환경
+- 단일 노드 클러스터
+- 빠른 프로토타이핑
+- 디버깅/테스트
+
+volumeClaimTemplates 적합:
+- 프로덕션 환경
+- 다중 노드 클러스터
+- 스케일링이 필요한 경우
+- 고가용성 요구사항
+
+**5. 구성 관리**:
+
+hostPath 관리:
+```bash
+# 디렉토리 생성
+mkdir -p /data/mysql
+
+# 권한 설정
+chmod 777 /data/mysql
+
+# 데이터 백업
+cp -r /data/mysql /backup/mysql
+```
+
+volumeClaimTemplates 관리:
+```bash
+# PVC 상태 확인
+kubectl get pvc
+
+# 스토리지 클래스 확인
+kubectl get storageclass
+
+# PVC 백업
+kubectl get pvc data-mysql-0 -o yaml > pvc-backup.yaml
+```
+
+**6. 보안 고려사항**:
+
+hostPath:
+- 노드 파일시스템 직접 접근
+- 보안 제한 없음
+- 권한 관리 제한적
+
+volumeClaimTemplates:
+- RBAC 통합
+- 스토리지 정책 적용 가능
+- 암호화 지원

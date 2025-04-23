@@ -24,5 +24,21 @@ spec:
       volumes:
       - name: sonarqube-data
         hostPath:
-          path: ${DATA_BASE_PATH}/sonarqube
+          path: /Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/sonarqube
           type: DirectoryOrCreate
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarqube
+  namespace: egov-cicd
+spec:
+  type: NodePort
+  ports:
+    - port: 9000
+      targetPort: 9000
+      nodePort: 30013
+  selector:
+    app: sonarqube

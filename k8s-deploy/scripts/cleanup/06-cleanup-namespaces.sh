@@ -11,6 +11,7 @@ NAMESPACES=(
     "egov-infra"
     "egov-app"
     "egov-db"
+    "egov-cicd"
     "egov-monitoring"
 )
 
