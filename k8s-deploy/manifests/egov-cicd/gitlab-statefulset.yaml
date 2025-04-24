@@ -5,13 +5,13 @@ metadata:
   namespace: egov-cicd
 data:
   gitlab.rb: |
-    external_url 'http://gitlab.example.com'
+    external_url 'http://localhost:30012'
     
     # Redis 설정
     # gitlab.rb 수정
     redis['enable'] = true
 
-    gitlab_rails['redis_host'] = "redis-0.redis-headless.egov-cicd.svc.cluster.local"
+    gitlab_rails['redis_host'] = "redis-0.redis-headless.egov-db.svc.cluster.local"
     gitlab_rails['redis_port'] = 6379
     gitlab_rails['redis_password'] = "thqkd119!"
 
@@ -31,7 +31,8 @@ data:
     gitlab_workhorse['listen_addr'] = '0.0.0.0:8282'
     gitlab_workhorse['backend'] = 'http://127.0.0.1:9292'
 
-    nginx['enable'] = false
+    nginx['enable'] = true
+    nginx['listen_port'] = 80
 
     # Rails 설정
     gitlab_rails['env'] = {
