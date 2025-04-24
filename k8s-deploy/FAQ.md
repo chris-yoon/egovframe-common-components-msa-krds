@@ -1172,6 +1172,60 @@ kubectl apply -f k8s-deploy/manifests/egov-db/postgresql.yaml
 - `Retain` 정책의 경우 PV의 데이터는 보존됨
 - 운영 환경에서는 데이터 백업 후 진행 권장
 
+### PV/PVC의 accessModes는 어떤 것들이 있나요?
+
+Kubernetes의 PV/PVC는 세 가지 accessModes를 지원합니다:
+
+**1. ReadWriteOnce (RWO)**:
+- 단일 노드에서만 읽기/쓰기 가능
+- 가장 일반적으로 사용되는 모드
+- 대부분의 스토리지 프로바이더가 지원
+- 사용 예: MySQL, Redis, OpenSearch
+
+예시:
+```yaml
+spec:
+  accessModes:
+    - ReadWriteOnce
+```
+
+**2. ReadWriteMany (RWX)**:
+- 여러 노드에서 동시에 읽기/쓰기 가능
+- 일부 스토리지 프로바이더만 지원 (NFS, GlusterFS 등)
+- 공유 파일시스템에 적합
+- 사용 예: 공유 설정 파일, 미디어 파일
+
+예시:
+```yaml
+spec:
+  accessModes:
+    - ReadWriteMany
+```
+
+**3. ReadOnlyMany (ROX)**:
+- 여러 노드에서 읽기만 가능
+- 설정 파일이나 정적 콘텐츠에 적합
+- 읽기 전용 데이터 공유에 사용
+- 사용 예: 설정 파일, 정적 웹 콘텐츠
+
+예시:
+```yaml
+spec:
+  accessModes:
+    - ReadOnlyMany
+```
+
+**주의사항**:
+- 스토리지 프로바이더마다 지원하는 accessModes가 다름
+- 클라우드 환경에서는 제공자의 지원 여부 확인 필요
+- hostPath는 일반적으로 ReadWriteOnce만 사용
+- 여러 모드를 동시에 설정할 수 있으나, 스토리지 프로바이더의 지원 필요
+
+**현재 프로젝트의 accessModes 사용**:
+- MySQL: ReadWriteOnce
+- Redis: ReadWriteOnce
+- OpenSearch: ReadWriteOnce
+- PostgreSQL: ReadWriteOnce
 
 ## 3. 네트워킹
 - Service Discovery
@@ -2473,149 +2527,180 @@ DNS 문제를 해결하기 위해 다음 단계를 거치면 됩니다:
    nc -zv mysql-0.mysql-headless.egov-db.svc.cluster.local 3306
    ```
 
+### Redis Insight로 Redis 접속하기
 
-### hostPath와 volumeClaimTemplates의 차이점
+#### 1. Redis Insight 설치 방법:
 
-**1. 기본 개념**:
-
-hostPath:
-- 노드의 파일시스템을 직접 마운트
-- 특정 노드의 로컬 경로를 컨테이너에 연결
-- 단순하고 직접적인 방식
-
-volumeClaimTemplates:
-- 동적으로 PVC를 생성하는 템플릿
-- StatefulSet의 각 Pod마다 독립적인 스토리지 제공
-- 추상화된 스토리지 관리 방식
-
-**2. 구현 예시**:
-
-hostPath 예시:
-```yaml
-apiVersion: v1
-kind: Pod
-spec:
-  volumes:
-  - name: data
-    hostPath:
-      path: /data/mysql
-      type: DirectoryOrCreate
-  containers:
-  - name: mysql
-    volumeMounts:
-    - name: data
-      mountPath: /var/lib/mysql
-```
-
-volumeClaimTemplates 예시:
-```yaml
-apiVersion: apps/v1
-kind: StatefulSet
-spec:
-  volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      resources:
-        requests:
-          storage: 10Gi
-```
-
-**3. 주요 차이점**:
-
-- **스케일링**:
-   - hostPath: 
-     - 모든 Pod가 동일 경로 공유
-     - 다중 Pod 실행 시 데이터 충돌 위험
-     - 노드 간 데이터 공유 불가
-   
-   - volumeClaimTemplates:
-     - Pod마다 독립적인 PVC 생성
-     - 자동 스케일링 지원
-     - 클러스터 전체에서 데이터 접근 가능
-
-- **데이터 지속성**:
-   - hostPath:
-     - 노드 종속적
-     - 노드 장애 시 데이터 손실 위험
-     - 수동 백업/복구 필요
-   
-   - volumeClaimTemplates:
-     - 노드 독립적
-     - 자동 데이터 보존
-     - 클라우드 스토리지 통합 가능
-
-- **이식성**:
-   - hostPath:
-     - 특정 노드에 종속
-     - 환경 간 이동 어려움
-     - 로컬 개발에 적합
-   
-   - volumeClaimTemplates:
-     - 클라우드 중립적
-     - 환경 간 이동 용이
-     - 프로덕션 환경에 적합
-
-- **관리**:
-   - hostPath:
-     - 단순한 설정
-     - 직접적인 파일시스템 접근
-     - 제한된 관리 기능
-   
-   - volumeClaimTemplates:
-     - 동적 프로비저닝
-     - 스토리지 클래스 활용
-     - 고급 관리 기능 제공
-
-**4. 사용 시나리오**:
-
-hostPath 적합:
-- 로컬 개발 환경
-- 단일 노드 클러스터
-- 빠른 프로토타이핑
-- 디버깅/테스트
-
-volumeClaimTemplates 적합:
-- 프로덕션 환경
-- 다중 노드 클러스터
-- 스케일링이 필요한 경우
-- 고가용성 요구사항
-
-**5. 구성 관리**:
-
-hostPath 관리:
+**Mac OS**:
 ```bash
-# 디렉토리 생성
-mkdir -p /data/mysql
+# Homebrew로 설치
+brew install --cask redisinsight
 
-# 권한 설정
-chmod 777 /data/mysql
-
-# 데이터 백업
-cp -r /data/mysql /backup/mysql
+# 또는 직접 다운로드
+open https://redis.io/insight/
 ```
 
-volumeClaimTemplates 관리:
+**Windows**:
+- https://redis.io/insight/ 에서 Windows 버전 다운로드
+- 다운로드된 설치 파일 실행
+
+#### 2. Redis Insight 실행 및 접속:
+
+**방법 1 - Connection URL 사용**:
+- ADD REDIS DATABASE 클릭
+- "Connect using a Redis URL" 선택
+- URL 입력:
+```
+redis://:thqkd119!@localhost:30379
+```
+- Name: egov-redis (또는 원하는 이름)
+- TEST CONNECTION 클릭하여 연결 테스트
+- ADD REDIS DATABASE 클릭하여 저장
+
+**방법 2 - 수동 설정**:
+- ADD REDIS DATABASE 클릭
+- "Connect to a Redis Database" 선택
+- 다음 정보 입력:
+  - Host: localhost
+  - Port: 30379
+  - Name: egov-redis
+  - Username: (비워두기)
+  - Password: thqkd119!
+- TEST CONNECTION 클릭
+- ADD REDIS DATABASE 클릭
+
+#### 3. 연결 확인:
 ```bash
-# PVC 상태 확인
-kubectl get pvc
+# Redis 서비스 상태 확인
+kubectl get svc redis-nodeport -n egov-db
 
-# 스토리지 클래스 확인
-kubectl get storageclass
+# Redis 파드 상태 확인
+kubectl get pods -n egov-db -l app=redis
 
-# PVC 백업
-kubectl get pvc data-mysql-0 -o yaml > pvc-backup.yaml
+# 포트 접근 가능 여부 테스트
+nc -zv localhost 30379
 ```
 
-**6. 보안 고려사항**:
+#### 4. 주요 기능:
+- Browser: 키-값 탐색 및 관리
+- CLI: Redis 명령어 실행
+- Slowlog: 느린 명령어 분석
+- Info: Redis 서버 정보 확인
+- Monitor: 실시간 명령어 모니터링
 
-hostPath:
-- 노드 파일시스템 직접 접근
-- 보안 제한 없음
-- 권한 관리 제한적
+#### 5. 문제 해결:
+- 연결 실패 시:
+  ```bash
+  # Redis 로그 확인
+  kubectl logs -n egov-db $(kubectl get pods -n egov-db -l app=redis -o jsonpath='{.items[0].metadata.name}')
+  
+  # Redis 비밀번호 확인
+  kubectl get secret redis-secret -n egov-db -o jsonpath='{.data.redis-password}' | base64 -d
+  ```
+- 방화벽 설정 확인
+- NodePort(30379) 접근 가능 여부 확인
 
-volumeClaimTemplates:
-- RBAC 통합
-- 스토리지 정책 적용 가능
-- 암호화 지원
+### Redis CLI로 redis-0 파드에 직접 접속하기
+
+#### 1. Redis 파드에 직접 접속:
+```bash
+# redis-cli로 파드 접속
+kubectl exec -it redis-0 -n egov-db -- redis-cli -a thqkd119!
+
+# 또는 sh로 접속 후 redis-cli 실행
+kubectl exec -it redis-0 -n egov-db -- sh
+redis-cli -a thqkd119!
+```
+
+#### 2. 주요 Redis 명령어:
+```bash
+# 키 목록 조회
+keys *
+
+# 특정 키의 타입 확인
+type [key]
+
+# 특정 키의 값 조회
+get [key]           # 문자열
+hgetall [key]       # 해시
+lrange [key] 0 -1   # 리스트
+smembers [key]      # 셋
+zrange [key] 0 -1   # 정렬된 셋
+
+# 서버 정보 확인
+info
+
+# 메모리 사용량 확인
+info memory
+
+# 클라이언트 연결 정보
+info clients
+
+# 복제 정보 확인
+info replication
+```
+
+#### 3. 모니터링 명령어:
+```bash
+# 실시간 명령어 모니터링
+monitor
+
+# 느린 명령어 로그
+slowlog get 10
+
+# 메모리 사용량이 큰 키 확인
+--bigkeys
+```
+
+#### 4. 데이터 관리:
+```bash
+# 키 삭제
+del [key]
+
+# 모든 키 삭제
+flushall
+
+# 키 만료시간 설정
+expire [key] [seconds]
+
+# 키 만료시간 확인
+ttl [key]
+```
+
+#### 5. 보안 관련:
+```bash
+# 현재 설정 확인
+config get *
+
+# ACL 목록 확인
+acl list
+
+# 클라이언트 목록
+client list
+```
+
+#### 6. 파드 로그 확인:
+```bash
+# Redis 로그 확인
+kubectl logs redis-0 -n egov-db
+
+# 실시간 로그 확인
+kubectl logs -f redis-0 -n egov-db
+```
+
+주의: Redis CLI에서 나가기는 `exit` 또는 `Ctrl+D`를 사용합니다.
+
+### Gitlab 초기 비밀번호 설정
+
+Gitlab 초기 비밀번호는 다음과 같은 방법으로 설정할 수 있습니다:
+
+```bash
+kubectl exec -n egov-cicd gitlab-0 -it -- /bin/bash
+
+$ gitlab-rails console -e production
+irb(main):001:0> user = User.where(id: 1).first
+irb(main):002:0> user.password = 'new_password'
+irb(main):003:0> user.password_confirmation = 'new_password'
+irb(main):004:0> user.save!
+irb(main):005:0> exit
+```
