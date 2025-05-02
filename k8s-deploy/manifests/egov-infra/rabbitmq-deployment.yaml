@@ -50,4 +50,4 @@ spec:
       volumes:
       - name: rabbitmq-data
         persistentVolumeClaim:
-          claimName: rabbitmq-pvc
+          claimName: rabbitmq-pvc-nfs

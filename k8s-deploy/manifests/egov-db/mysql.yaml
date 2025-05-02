@@ -1,38 +1,74 @@
+# hostPath PersistentVolume
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: mysql-pv-hostpath
+#   labels:
+#     type: local
+# spec:
+#   capacity:
+#     storage: 1Gi
+#   accessModes:
+#     - ReadWriteOnce
+#   persistentVolumeReclaimPolicy: Retain
+#   storageClassName: standard
+#   hostPath:
+#     path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/mysql"
+#     type: DirectoryOrCreate
+
+---
+# hostPath PersistentVolumeClaim
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: mysql-pvc-hostpath
+#   namespace: egov-db
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 1Gi
+#   storageClassName: standard
+#   volumeName: mysql-pv-hostpath
+
+---
+# NFS PersistentVolume
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: mysql-pv-0
+  name: mysql-pv-nfs
   labels:
-    type: local
+    type: nfs
 spec:
   capacity:
     storage: 1Gi
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: standard
-  hostPath:
-    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/mysql"
-    type: DirectoryOrCreate
+  storageClassName: nfs-storage
+  nfs:
+    server: 192.168.56.21  # Replace with your NFS server IP
+    path: "/srv/nfs/data/mysql"
 
 ---
-
+# NFS PersistentVolumeClaim
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: data-mysql-0
+  name: mysql-pvc-nfs
   namespace: egov-db
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
       storage: 1Gi
-  storageClassName: standard
-  volumeName: mysql-pv-0
+  storageClassName: nfs-storage
+  volumeName: mysql-pv-nfs
 
 ---
-
+# MySQL Secret
 apiVersion: v1
 kind: Secret
 metadata:
@@ -50,7 +86,7 @@ data:
   MYSQL_DATABASE: Y29t
 
 ---
-
+# MySQL StatefulSet
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -123,10 +159,11 @@ spec:
       volumes:
       - name: data
         persistentVolumeClaim:
-          claimName: data-mysql-0
+          # To use NFS storage, change this to mysql-pvc-nfs
+          claimName: mysql-pvc-nfs
 
 ---
-
+# MySQL Headless Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -140,7 +177,7 @@ spec:
     app: mysql
 
 ---
-
+# MySQL Service
 apiVersion: v1
 kind: Service
 metadata:

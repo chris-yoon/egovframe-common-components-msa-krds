@@ -84,4 +84,4 @@ spec:
       volumes:
       - name: postgresql-data
         persistentVolumeClaim:
-          claimName: postgresql-data-0
+          claimName: postgresql-pvc-nfs

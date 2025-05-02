@@ -46,7 +46,7 @@ spec:
       volumes:
       - name: data
         persistentVolumeClaim:
-          claimName: data-redis-0
+          claimName: redis-pvc-nfs
 
 ---          
 

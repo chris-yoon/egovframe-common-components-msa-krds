@@ -1,19 +1,55 @@
+# hostPath PersistentVolume
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: rabbitmq-pv-hostpath
+#   namespace: egov-infra
+# spec:
+#   capacity:
+#     storage: 10Mi
+#   accessModes:
+#     - ReadWriteOnce
+#   hostPath:
+#     path: "${DATA_BASE_PATH}/rabbitmq"
+#     type: DirectoryOrCreate
+#   storageClassName: standard
+
+---
+# hostPath PersistentVolumeClaim
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: rabbitmq-pvc-hostpath
+#   namespace: egov-infra
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 10Mi
+#   storageClassName: standard
+#   volumeName: rabbitmq-pv-hostpath
+
+---
+# NFS PersistentVolume
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: rabbitmq-pv
+  name: rabbitmq-pv-nfs
   namespace: egov-infra
 spec:
   capacity:
     storage: 10Mi
   accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: "${DATA_BASE_PATH}/rabbitmq"
-    type: DirectoryOrCreate
-  storageClassName: standard
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-storage
+  nfs:
+    server: 192.168.56.21
+    path: "/srv/nfs/data/rabbitmq"
 
 ---
+# NFS PersistentVolumeClaim
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -21,8 +57,9 @@ metadata:
   namespace: egov-infra
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
       storage: 10Mi
-  storageClassName: standard
+  storageClassName: nfs-storage
+  volumeName: rabbitmq-pv-nfs

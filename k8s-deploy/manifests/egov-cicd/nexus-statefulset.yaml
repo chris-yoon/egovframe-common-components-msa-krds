@@ -1,3 +1,77 @@
+# hostPath PersistentVolume (commented out)
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: nexus-pv-hostpath
+#   labels:
+#     type: local
+# spec:
+#   capacity:
+#     storage: 8Gi
+#   accessModes:
+#     - ReadWriteOnce
+#   persistentVolumeReclaimPolicy: Retain
+#   storageClassName: standard
+#   hostPath:
+#     path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/nexus"
+#     type: DirectoryOrCreate
+
+---
+
+# hostPath PersistentVolumeClaim (commented out)
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: nexus-pvc-hostpath
+#   namespace: egov-cicd
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 8Gi
+#   storageClassName: standard
+#   volumeName: nexus-pv-hostpath
+
+---
+
+# NFS PersistentVolume
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nexus-pv-nfs
+  labels:
+    type: nfs
+spec:
+  capacity:
+    storage: 8Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-storage
+  nfs:
+    server: 192.168.56.21
+    path: "/srv/nfs/data/nexus"
+
+---
+
+# NFS PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nexus-pvc-nfs
+  namespace: egov-cicd
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 8Gi
+  storageClassName: nfs-storage
+  volumeName: nexus-pv-nfs
+
+---
+
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -50,9 +124,12 @@ spec:
           value: "-Xms512m -Xmx2g -XX:MaxDirectMemorySize=2g -Djava.util.prefs.userRoot=/nexus-data/javaprefs"
       volumes:
       - name: nexus-data
-        hostPath:
-          path: /Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/nexus
-          type: DirectoryOrCreate
+        persistentVolumeClaim:
+          # To use hostPath storage, uncomment this and comment out the NFS claim
+          # claimName: nexus-pvc-hostpath
+          
+          # Using NFS storage
+          claimName: nexus-pvc-nfs
       securityContext:
         fsGroup: 200
 

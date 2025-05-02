@@ -88,16 +88,16 @@ spec:
       volumes:
       - name: search-config
         persistentVolumeClaim:
-          claimName: egov-search-config-pvc
+          claimName: egov-search-config-pvc-nfs
       - name: search-model
         persistentVolumeClaim:
-          claimName: egov-search-model-pvc
+          claimName: egov-search-model-pvc-nfs
       - name: search-cacerts
         persistentVolumeClaim:
-          claimName: egov-search-cacerts-pvc
+          claimName: egov-search-cacerts-pvc-nfs
       - name: search-example
         persistentVolumeClaim:
-          claimName: egov-search-example-pvc
+          claimName: egov-search-example-pvc-nfs
 ---
 apiVersion: v1
 kind: Service

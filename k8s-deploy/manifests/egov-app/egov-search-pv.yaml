@@ -1,8 +1,8 @@
-# Config PV/PVC
+# Config PV/PVC - hostPath
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: egov-search-config-pv
+  name: egov-search-config-pv-hostpath
   namespace: egov-app
 spec:
   capacity:
@@ -18,7 +18,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: egov-search-config-pvc
+  name: egov-search-config-pvc-hostpath
   namespace: egov-app
 spec:
   accessModes:
@@ -27,12 +27,44 @@ spec:
     requests:
       storage: 1Mi
   storageClassName: standard
+  volumeName: egov-search-config-pv-hostpath
 ---
-# Model PV/PVC
+# Config PV/PVC - NFS
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: egov-search-model-pv
+  name: egov-search-config-pv-nfs
+  namespace: egov-app
+spec:
+  capacity:
+    storage: 1Mi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-storage
+  nfs:
+    server: 192.168.56.21
+    path: "/srv/nfs/data/egov-search/config"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: egov-search-config-pvc-nfs
+  namespace: egov-app
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  storageClassName: nfs-storage
+  volumeName: egov-search-config-pv-nfs
+---
+# Model PV/PVC - hostPath
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: egov-search-model-pv-hostpath
   namespace: egov-app
 spec:
   capacity:
@@ -48,7 +80,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: egov-search-model-pvc
+  name: egov-search-model-pvc-hostpath
   namespace: egov-app
 spec:
   accessModes:
@@ -57,12 +89,44 @@ spec:
     requests:
       storage: 1Gi
   storageClassName: standard
+  volumeName: egov-search-model-pv-hostpath
 ---
-# Example PV/PVC
+# Model PV/PVC - NFS
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: egov-search-example-pv
+  name: egov-search-model-pv-nfs
+  namespace: egov-app
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-storage
+  nfs:
+    server: 192.168.56.21
+    path: "/srv/nfs/data/egov-search/model"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: egov-search-model-pvc-nfs
+  namespace: egov-app
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: nfs-storage
+  volumeName: egov-search-model-pv-nfs
+---
+# Example PV/PVC - hostPath
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: egov-search-example-pv-hostpath
   namespace: egov-app
 spec:
   capacity:
@@ -78,7 +142,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: egov-search-example-pvc
+  name: egov-search-example-pvc-hostpath
   namespace: egov-app
 spec:
   accessModes:
@@ -87,12 +151,44 @@ spec:
     requests:
       storage: 1Mi
   storageClassName: standard
+  volumeName: egov-search-example-pv-hostpath
 ---
-# Cacerts PV/PVC
+# Example PV/PVC - NFS
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: egov-search-cacerts-pv
+  name: egov-search-example-pv-nfs
+  namespace: egov-app
+spec:
+  capacity:
+    storage: 1Mi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-storage
+  nfs:
+    server: 192.168.56.21
+    path: "/srv/nfs/data/egov-search/example"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: egov-search-example-pvc-nfs
+  namespace: egov-app
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  storageClassName: nfs-storage
+  volumeName: egov-search-example-pv-nfs
+---
+# Cacerts PV/PVC - hostPath
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: egov-search-cacerts-pv-hostpath
   namespace: egov-app
 spec:
   capacity:
@@ -108,7 +204,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: egov-search-cacerts-pvc
+  name: egov-search-cacerts-pvc-hostpath
   namespace: egov-app
 spec:
   accessModes:
@@ -117,3 +213,35 @@ spec:
     requests:
       storage: 1Mi
   storageClassName: standard
+  volumeName: egov-search-cacerts-pv-hostpath
+---
+# Cacerts PV/PVC - NFS
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: egov-search-cacerts-pv-nfs
+  namespace: egov-app
+spec:
+  capacity:
+    storage: 1Mi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-storage
+  nfs:
+    server: 192.168.56.21
+    path: "/srv/nfs/data/egov-search/cacerts"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: egov-search-cacerts-pvc-nfs
+  namespace: egov-app
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+  storageClassName: nfs-storage
+  volumeName: egov-search-cacerts-pv-nfs

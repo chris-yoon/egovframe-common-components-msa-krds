@@ -61,38 +61,77 @@ data:
 
 ---
 
+# hostPath PersistentVolume (commented out)
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: opensearch-pv-0
+#   labels:
+#     type: local
+# spec:
+#   capacity:
+#     storage: 1Gi
+#   accessModes:
+#     - ReadWriteOnce
+#   persistentVolumeReclaimPolicy: Retain
+#   storageClassName: standard
+#   hostPath:
+#     path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/opensearch"
+#     type: DirectoryOrCreate
+
+---
+
+# hostPath PersistentVolumeClaim (commented out)
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: opensearch-data-hostpath
+#   namespace: egov-db
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 1Gi
+#   storageClassName: standard
+#   volumeName: opensearch-pv-0
+
+---
+
+# NFS PersistentVolume
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: opensearch-pv-0
+  name: opensearch-pv-nfs
   labels:
-    type: local
+    type: nfs
 spec:
   capacity:
     storage: 1Gi
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: standard
-  hostPath:
-    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/opensearch"
-    type: DirectoryOrCreate
+  storageClassName: nfs-storage
+  nfs:
+    server: 192.168.56.21
+    path: "/srv/nfs/data/opensearch"
 
 ---
 
+# NFS PersistentVolumeClaim
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: opensearch-data-0
+  name: data-opensearch-nfs
   namespace: egov-db
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
       storage: 1Gi
-  storageClassName: standard
-  volumeName: opensearch-pv-0
+  storageClassName: nfs-storage
+  volumeName: opensearch-pv-nfs
 
 ---
 
@@ -159,7 +198,11 @@ spec:
           secretName: opensearch-certs
       - name: data
         persistentVolumeClaim:
-          claimName: opensearch-data-0
+          # To use hostPath storage, uncomment this and comment out the NFS claim
+          # claimName: opensearch-data-hostpath
+          
+          # Using NFS storage
+          claimName: data-opensearch-nfs
 
 ---
 

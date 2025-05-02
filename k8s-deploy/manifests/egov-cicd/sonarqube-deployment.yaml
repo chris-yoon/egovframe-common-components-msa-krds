@@ -1,3 +1,77 @@
+# hostPath PersistentVolume (commented out)
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: sonarqube-pv-hostpath
+#   labels:
+#     type: local
+# spec:
+#   capacity:
+#     storage: 5Gi
+#   accessModes:
+#     - ReadWriteOnce
+#   persistentVolumeReclaimPolicy: Retain
+#   storageClassName: standard
+#   hostPath:
+#     path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/sonarqube"
+#     type: DirectoryOrCreate
+
+---
+
+# hostPath PersistentVolumeClaim (commented out)
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: sonarqube-pvc-hostpath
+#   namespace: egov-cicd
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 5Gi
+#   storageClassName: standard
+#   volumeName: sonarqube-pv-hostpath
+
+---
+
+# NFS PersistentVolume
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sonarqube-pv-nfs
+  labels:
+    type: nfs
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-storage
+  nfs:
+    server: 192.168.56.21
+    path: "/srv/nfs/data/sonarqube"
+
+---
+
+# NFS PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarqube-pvc-nfs
+  namespace: egov-cicd
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: nfs-storage
+  volumeName: sonarqube-pv-nfs
+
+---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,9 +97,14 @@ spec:
           mountPath: /opt/sonarqube/data
       volumes:
       - name: sonarqube-data
-        hostPath:
-          path: /Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/sonarqube
-          type: DirectoryOrCreate
+        persistentVolumeClaim:
+          # To use hostPath storage, uncomment this and comment out the NFS claim
+          # claimName: sonarqube-pvc-hostpath
+          
+          # Using NFS storage
+          claimName: sonarqube-pvc-nfs
+      securityContext:
+        fsGroup: 1000
 
 ---
 

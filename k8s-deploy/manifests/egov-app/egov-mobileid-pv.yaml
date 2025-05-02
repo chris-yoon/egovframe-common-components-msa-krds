@@ -1,28 +1,65 @@
+# hostPath PersistentVolume
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: egov-mobileid-pv-hostpath
+#   namespace: egov-app
+# spec:
+#   capacity:
+#     storage: 10Mi
+#   accessModes:
+#     - ReadWriteOnce
+#   persistentVolumeReclaimPolicy: Retain
+#   storageClassName: standard
+#   hostPath:
+#     path: "${MOBILEID_CONFIG_PATH}"
+#     type: DirectoryOrCreate
+---
+# hostPath PersistentVolumeClaim
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: egov-mobileid-pvc-hostpath
+#   namespace: egov-app
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 10Mi
+#   storageClassName: standard
+#   volumeName: egov-mobileid-pv-hostpath
+
+---
+# NFS PersistentVolume
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: egov-mobileid-pv
+  name: egov-mobileid-pv-nfs
   namespace: egov-app
 spec:
   capacity:
     storage: 10Mi
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: standard
-  hostPath:
-    path: "${MOBILEID_CONFIG_PATH}"
-    type: DirectoryOrCreate
+  storageClassName: nfs-storage
+  nfs:
+    server: 192.168.56.21
+    path: "/srv/nfs/data/egov-mobileid/config"
+
 ---
+# NFS PersistentVolumeClaim
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: egov-mobileid-pvc
+  name: egov-mobileid-pvc-nfs
   namespace: egov-app
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
       storage: 10Mi
-  storageClassName: standard
+  storageClassName: nfs-storage
+  volumeName: egov-mobileid-pv-nfs
