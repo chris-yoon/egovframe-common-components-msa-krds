@@ -5,11 +5,204 @@
 > `kubectl wait` 명령어는 리소스가 준비될 때까지 대기합니다.  
 > 실제 환경에 따라 일부 경로나 설정을 조정해야 할 수 있습니다.
 
-## 1. Istio 설치
+## 1. 사전 설정
+
+### Host 에 Vagrant로 3개 노드로 쿠버네티스 클러스터 구성할 경우
+
+3개의 VM (Control Plane, Worker1, Worker2) 으로 구성된다고 가정한다.
+Control Plane CPU 2개, 메모리 6GB
+Worker1 CPU 3개, 메모리 14GB
+Worker2 CPU 2개, 메모리 6GB
+
+호스트로 접속하여 vagrant 프로젝트를 확인한다.
+
+```bash
+ssh msadev2@192.168.100.116
+# 프롬프트가 나타나면 msadev3 계정의 정확한 비밀번호를 입력 password1!
+
+cd vagrant_restore
+
+# 현재 Vagrant 가상 머신들의 상태 확인 (실행 중, 중지됨 등)
+vagrant status
+# 모든 Vagrant 가상 머신을 정상적으로 종료 (전원 끄기)
+vagrant halt
+# 모든 Vagrant 가상 머신을 시작 (전원 켜기)
+vagrant up
+
+vagrant ssh control-plane1 # 컨트롤 플레인 노드 VM에 SSH 접속
+vagrant ssh worker1 # 첫 번째 워커 노드 VM에 SSH 접속
+vagrant ssh worker2 # 두 번째 워커 노드 VM에 SSH 접속
+
+```
+
+호스트로 접속하여 git 프로젝트를 클론 후 빌드한다.
+
+```bash
+ssh msadev2@192.168.100.116
+# 프롬프트가 나타나면 msadev3 계정의 정확한 비밀번호를 입력 password1!
+
+git clone https://github.com/chris-yoon/egovframe-common-components-msa-krds.git
+cd egovframe-common-components-msa-krds
+
+# Java 17 설치
+sudo apt-get update
+sudo apt-get install -y openjdk-17-jdk maven git
+
+# Java 17을 기본 버전으로 설정
+sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+sudo update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
+java -version
+mvn -version
+
+# 소유권 및 권한 설정
+sudo chown -R vagrant:vagrant /home/msadev2/egovframe-common-components-msa-krds
+sudo chmod -R 755 /home/msadev2/egovframe-common-components-msa-krds
+
+./build.sh # 프로젝트 빌드
+./docker-build.sh -k # k8s 태그로 이미지 빌드
+
+# OpenSearch 이미지(Nori 플러그인 포함) 빌드
+cd /{프로젝트 경로}/EgovSearch/docker-compose/Opensearch
+docker build -t opensearch-with-nori:2.15.0 .
+
+```
+
+### NFS 서버 설치 및 설정
+
+Control-plane1에서 진행한다.
+
+```bash
+vagrant ssh control-plane1
+
+# NFS 서버 설치
+sudo apt-get update
+sudo apt-get install -y nfs-kernel-server
+
+# NFS 데이터 디렉토리 생성
+sudo mkdir -p /srv/nfs/data
+sudo mkdir -p /srv/nfs/data/{jenkins,nexus,mysql,sonarqube,opensearch,rabbitmq,gitlab,postgresql,redis,prometheus,egov-mobileid/config,egov-search/{cacerts,example,model,config}}
+
+# 모든 데이터 디렉토리에 대한 권한 설정
+sudo chmod -R 777 /srv/nfs/data
+sudo chown -R nobody:nogroup /srv/nfs/data
+
+# NFS 서버 시작
+sudo /etc/init.d/nfs-kernel-server start
+```
+
+### PV 및 PVC 파일 수정
+
+각 PV 및 PVC 파일을 수정하여 NFS를 사용하도록 설정합니다. (호스트에서 작업)
+
+```bash
+# PV 및 PVC 파일 수정
+cd /{프로젝트 경로}/k8s-deploy/manifests
+# 다음 PV, PVC 파일에서 nfs 서버 주소, path를 확인/수정한다.
+egov-db/mysql-pv.yaml
+egov-db/opensearch-pv.yaml
+egov-db/postgresql-pv.yaml
+egov-db/redis-pv.yaml
+egov-infra/rabbitmq-pv.yaml
+egov-app/egov-mobileid-pv.yaml
+egov-app/egov-search-pv.yaml
+
+# 다음 파일에서 persistentVolumeClaim 명을 확인/수정한다.
+egov-db/mysql.yaml
+egov-db/opensearch.yaml
+egov-db/postgresql.yaml
+egov-db/redis.yaml
+egov-infra/rabbitmq-deployment.yaml
+egov-app/egov-mobileid-deployment.yaml
+egov-app/egov-search-deployment.yaml
+```
+
+### 도커 이미지 복사
+
+빌드된 도커 이미지를 호스트의 vagrant 프로젝트 폴더로 저장한 후, 각 노드로 복사한다.
+각 노드에서 `ctr` 명령어를 사용하여 이미지를 로드한다.
+
+```bash
+# 호스트에서 실행
+# 루트 전용 폴더에 저장
+docker save egovcommonall:k8s -o /home/msadev2/vagrant_restore/egovcommonall.tar
+docker save egovhello:k8s -o /home/msadev2/vagrant_restore/egovhello.tar
+docker save gatewayserver:k8s -o /home/msadev2/vagrant_restore/gatewayserver.tar
+docker save egovmain:k8s -o /home/msadev2/vagrant_restore/egovmain.tar
+docker save egovboard:k8s -o /home/msadev2/vagrant_restore/egovboard.tar
+docker save egovlogin:k8s -o /home/msadev2/vagrant_restore/egovlogin.tar
+docker save egovauthor:k8s -o /home/msadev2/vagrant_restore/egovauthor.tar
+docker save egovmobileid:k8s -o /home/msadev2/vagrant_restore/egovmobileid.tar
+docker save egovquestionnaire:k8s -o /home/msadev2/vagrant_restore/egovquestionnaire.tar
+docker save egovcmmncode:k8s -o /home/msadev2/vagrant_restore/egovcmmncode.tar
+docker save egovsearch:k8s -o /home/msadev2/vagrant_restore/egovsearch.tar
+docker save opensearch-with-nori:2.15.0 -o /home/msadev2/vagrant_restore/opensearch-with-nori.tar
+
+# 호스트 머신 vagrant 프로젝트에서 worker1 에 복사
+cd ~/vagrant_restore
+vagrant scp ./egovcommonall.tar worker1:/home/vagrant/
+vagrant scp ./egovhello.tar worker1:/home/vagrant/
+vagrant scp ./gatewayserver.tar worker1:/home/vagrant/
+vagrant scp ./egovmain.tar worker1:/home/vagrant/
+vagrant scp ./egovboard.tar worker1:/home/vagrant/
+vagrant scp ./egovlogin.tar worker1:/home/vagrant/
+vagrant scp ./egovauthor.tar worker1:/home/vagrant/
+vagrant scp ./egovmobileid.tar worker1:/home/vagrant/
+vagrant scp ./egovquestionnaire.tar worker1:/home/vagrant/
+vagrant scp ./egovcmmncode.tar worker1:/home/vagrant/
+vagrant scp ./egovsearch.tar worker1:/home/vagrant/
+vagrant scp ./opensearch-with-nori.tar worker1:/home/vagrant/
+
+# 호스트 머신 vagrant 프로젝트에서 worker2 에 복사
+vagrant scp ./egovcommonall.tar worker2:/home/vagrant/
+vagrant scp ./egovhello.tar worker2:/home/vagrant/
+vagrant scp ./gatewayserver.tar worker2:/home/vagrant/
+vagrant scp ./egovmain.tar worker2:/home/vagrant/
+vagrant scp ./egovboard.tar worker2:/home/vagrant/
+vagrant scp ./egovlogin.tar worker2:/home/vagrant/
+vagrant scp ./egovauthor.tar worker2:/home/vagrant/
+vagrant scp ./egovmobileid.tar worker2:/home/vagrant/
+vagrant scp ./egovquestionnaire.tar worker2:/home/vagrant/
+vagrant scp ./egovcmmncode.tar worker2:/home/vagrant/
+vagrant scp ./egovsearch.tar worker2:/home/vagrant/
+vagrant scp ./opensearch-with-nori.tar worker2:/home/vagrant/
+
+# vagrant-scp 플러그인이 설치되어 있어야 한다.
+vagrant plugin install vagrant-scp
+
+# worker1, worker2 에서 로드
+vagrant ssh worker1
+vagrant ssh worker2
+
+# 1. containerd CLI로 이미지 import
+sudo ctr -n k8s.io images import /home/vagrant/egovcommonall.tar
+sudo ctr -n k8s.io images import /home/vagrant/egovhello.tar
+sudo ctr -n k8s.io images import /home/vagrant/gatewayserver.tar
+sudo ctr -n k8s.io images import /home/vagrant/egovmain.tar
+sudo ctr -n k8s.io images import /home/vagrant/egovboard.tar
+sudo ctr -n k8s.io images import /home/vagrant/egovlogin.tar
+sudo ctr -n k8s.io images import /home/vagrant/egovauthor.tar
+sudo ctr -n k8s.io images import /home/vagrant/egovmobileid.tar
+sudo ctr -n k8s.io images import /home/vagrant/egovquestionnaire.tar
+sudo ctr -n k8s.io images import /home/vagrant/egovcmmncode.tar
+sudo ctr -n k8s.io images import /home/vagrant/egovsearch.tar
+sudo ctr -n k8s.io images import /home/vagrant/opensearch-with-nori.tar
+
+# 2. 확인
+sudo ctr -n k8s.io images ls | grep egovcommonall
+```
+
+## 2. Istio 설치
 
 ```bash
 cd /{프로젝트 경로}/k8s-deploy/bin
+
+# 결과가 x86_64 나오면 Intel/AMD 64 비트 CPU (일반 PC/서버)
+uname -m
+curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.25.0 sh -
+
+# 그 외엔 ARM CPU
 curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.25.0 TARGET_ARCH=arm64 sh -
+
 cd istio-1.25.0
 export PATH=$PWD/bin:$PATH
 istioctl install --set profile=default -y
@@ -20,7 +213,7 @@ kubectl apply -f ../../manifests/egov-istio/telemetry.yaml
 kubectl wait --for=condition=Ready pods --all -n istio-system --timeout=300s
 ```
 
-## 2. 전역 설정 및 네임스페이스 생성
+## 3. 전역 설정 및 네임스페이스 생성
 
 ```bash
 # 전역 ConfigMap 생성 (hostPath 경로)
@@ -45,7 +238,7 @@ kubectl apply -f ../../manifests/common/egov-common-configmap.yaml -n egov-app
 kubectl apply -f ../../manifests/common/egov-common-configmap.yaml -n egov-infra
 ```
 
-## 3. 모니터링 설치
+## 4. 모니터링 설치
 
 ### cert-manager 설치
 ```bash
@@ -100,29 +293,31 @@ kubectl apply -f opentelemetry-collector.yaml
 kubectl wait --for=condition=Ready pods --all -n egov-monitoring --timeout=300s
 ```
 
-## 4. MySQL 설치
+## 5. MySQL 설치
 
 ```bash
 cd ../egov-db
+kubectl apply -f mysql-pv.yaml
 kubectl apply -f mysql.yaml
 kubectl rollout status statefulset/mysql -n egov-db --timeout=600s
 ```
 
-## 5. OpenSearch 설치
+## 6. OpenSearch 설치
 
 ```bash
+kubectl apply -f opensearch-pv.yaml
 kubectl apply -f opensearch.yaml
 kubectl apply -f opensearch-dashboard.yaml
 kubectl rollout status statefulset/opensearch -n egov-db --timeout=300s
 kubectl rollout status deployment/opensearch-dashboards -n egov-db --timeout=300s
 ```
 
-## 6. 인프라 서비스 설치
+## 7. 인프라 서비스 설치
 
 ```bash
 cd ../egov-infra
 kubectl apply -f rabbitmq-configmap.yaml
-envsubst '${DATA_BASE_PATH}' < rabbitmq-pv.yaml | kubectl apply -f -
+kubectl apply -f rabbitmq-pv.yaml
 kubectl apply -f rabbitmq-deployment.yaml
 kubectl apply -f rabbitmq-service.yaml
 kubectl rollout status deployment/rabbitmq -n egov-infra --timeout=300s
@@ -130,16 +325,18 @@ kubectl apply -f gatewayserver-deployment.yaml
 kubectl rollout status deployment/gateway-server -n egov-infra --timeout=300s
 ```
 
-## 7. 애플리케이션 서비스 설치
+## 8. 애플리케이션 서비스 설치
 
 ### MySQL Secret 복사 (egov-db -> egov-app)
 ```bash
 cd ../egov-app
 kubectl get secret mysql-secret -n egov-db -o yaml | sed 's/namespace: egov-db/namespace: egov-app/' | kubectl apply -f -
-export MOBILEID_CONFIG_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.mobileid_config_path}')
-envsubst '${MOBILEID_CONFIG_PATH}' < egov-mobileid-pv.yaml | kubectl apply -f -
-export SEARCH_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.search_base_path}')
-envsubst '${SEARCH_BASE_PATH}' < egov-search-pv.yaml | kubectl apply -f -
+```
+
+### PV 및 PVC 생성
+```bash
+kubectl apply -f egov-mobileid-pv.yaml
+kubectl apply -f egov-search-pv.yaml
 ```
 
 ### 각 서비스 배포
@@ -155,7 +352,18 @@ kubectl apply -f egov-cmmncode-deployment.yaml
 kubectl apply -f egov-search-deployment.yaml
 ```
 
-## 8. CICD 설치
+### 각 노드 메모리 CPU 확인
+
+```bash
+kubectl top node
+kubectl top node worker1
+kubectl top node worker2
+
+# 노드 상태 확인
+kubectl get nodes
+```
+
+## 9. CICD 설치
 
 ```bash
 cd ../egov-cicd
@@ -166,7 +374,7 @@ envsubst '${DATA_BASE_PATH}' < nexus-statefulset.yaml | kubectl apply -f -
 kubectl rollout status statefulset/jenkins -n egov-cicd --timeout=300s
 ```
 
-## 9. PostgreSQL, Redis, GitLab 설치
+## 10. PostgreSQL, Redis, GitLab 설치
 
 ```bash
 cd ../egov-db
