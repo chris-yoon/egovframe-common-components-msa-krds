@@ -90,6 +90,32 @@ sudo chown -R nobody:nogroup /srv/nfs/data
 sudo /etc/init.d/nfs-kernel-server start
 ```
 
+EgovSearch 와 EgovMobileId 설정 파일 복사 (나의 로컬 파일 -> 호스트)
+
+```bash
+# EgovSearch-config 디렉토리 전체를 한 번에 복사
+scp -r ~/Projects/egovframe/egovframe-common-components-msa-krds/EgovSearch-config msadev2@192.168.100.116:~/egovframe-common-components-msa-krds/
+
+scp -r ~/Projects/egovframe/egovframe-common-components-msa-krds/EgovMobileId/config msadev2@192.168.100.116:~/egovframe-common-components-msa-krds/
+```
+
+호스트 -> Control-plane1
+
+```bash
+# 로컬에서 tar로 압축 후 vagrant scp로 전송하고 원격에서 압축 해제
+cd ~/egovframe-common-components-msa-krds
+tar -czf EgovSearch-config.tar.gz EgovSearch-config
+vagrant scp EgovSearch-config.tar.gz control-plane1:/tmp/
+vagrant ssh control-plane1 -c "sudo tar -xzf /tmp/EgovSearch-config.tar.gz -C /tmp/ && sudo cp -r /tmp/EgovSearch-config/config/* /srv/nfs/data/egov-search/config/ && sudo cp -r /tmp/EgovSearch-config/model/* /srv/nfs/data/egov-search/model/ && sudo cp -r /tmp/EgovSearch-config/example/* /srv/nfs/data/egov-search/example/ && sudo cp -r /tmp/EgovSearch-config/cacerts/* /srv/nfs/data/egov-search/cacerts/ && sudo rm -rf /tmp/EgovSearch-config*"
+
+# EgovMobileId 설정 파일 전송 (tar 방식)
+cd ~/egovframe-common-components-msa-krds
+tar -czf EgovMobileId-config.tar.gz EgovMobileId/config
+vagrant scp EgovMobileId-config.tar.gz control-plane1:/tmp/
+vagrant ssh control-plane1 -c "sudo tar -xzf /tmp/EgovMobileId-config.tar.gz -C /tmp/ && sudo cp -r /tmp/EgovMobileId/config/* /srv/nfs/data/egov-mobileid/config/ && sudo rm -rf /tmp/EgovMobileId* /tmp/EgovMobileId-config.tar.gz"
+```
+
+
 ### PV 및 PVC 파일 수정
 
 각 PV 및 PVC 파일을 수정하여 NFS를 사용하도록 설정합니다. (호스트에서 작업)
