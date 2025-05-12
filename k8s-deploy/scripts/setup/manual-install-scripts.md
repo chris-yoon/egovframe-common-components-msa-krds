@@ -105,13 +105,15 @@ scp -r ~/Projects/egovframe/egovframe-common-components-msa-krds/EgovMobileId/co
 # 로컬에서 tar로 압축 후 vagrant scp로 전송하고 원격에서 압축 해제
 cd ~/egovframe-common-components-msa-krds
 tar -czf EgovSearch-config.tar.gz EgovSearch-config
-vagrant scp EgovSearch-config.tar.gz control-plane1:/tmp/
+cd ~/vagrant_restore
+vagrant scp ~/egovframe-common-components-msa-krds/EgovSearch-config.tar.gz control-plane1:/tmp/
 vagrant ssh control-plane1 -c "sudo tar -xzf /tmp/EgovSearch-config.tar.gz -C /tmp/ && sudo cp -r /tmp/EgovSearch-config/config/* /srv/nfs/data/egov-search/config/ && sudo cp -r /tmp/EgovSearch-config/model/* /srv/nfs/data/egov-search/model/ && sudo cp -r /tmp/EgovSearch-config/example/* /srv/nfs/data/egov-search/example/ && sudo cp -r /tmp/EgovSearch-config/cacerts/* /srv/nfs/data/egov-search/cacerts/ && sudo rm -rf /tmp/EgovSearch-config*"
 
 # EgovMobileId 설정 파일 전송 (tar 방식)
 cd ~/egovframe-common-components-msa-krds
 tar -czf EgovMobileId-config.tar.gz EgovMobileId/config
-vagrant scp EgovMobileId-config.tar.gz control-plane1:/tmp/
+cd ~/vagrant_restore
+vagrant scp ~/egovframe-common-components-msa-krds/EgovMobileId-config.tar.gz control-plane1:/tmp/
 vagrant ssh control-plane1 -c "sudo tar -xzf /tmp/EgovMobileId-config.tar.gz -C /tmp/ && sudo cp -r /tmp/EgovMobileId/config/* /srv/nfs/data/egov-mobileid/config/ && sudo rm -rf /tmp/EgovMobileId* /tmp/EgovMobileId-config.tar.gz"
 ```
 
@@ -215,6 +217,17 @@ sudo ctr -n k8s.io images import /home/vagrant/opensearch-with-nori.tar
 
 # 2. 확인
 sudo ctr -n k8s.io images ls | grep egovcommonall
+```
+
+### control-plane 노드에 "일반 Pod 금지" Taint를 적용함
+
+```bash
+# 일반적으로 생성되는 Pod는 이 노드(control-plane1)에 스케줄되지 않는다.
+kubectl describe node control-plane1 | grep Taint
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+
+# 위와 같지 않다면 다음 명령을 실행하여 "일반 Pod 금지" Taint를 적용한다.
+kubectl taint nodes control-plane1 node-role.kubernetes.io/control-plane=:NoSchedule
 ```
 
 ## 2. Istio 설치
