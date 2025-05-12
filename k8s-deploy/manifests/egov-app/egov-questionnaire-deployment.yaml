@@ -64,6 +64,14 @@ spec:
             configMapKeyRef:
               name: egov-common-config
               key: ROLES_ROLE_USER
+        - name: SPRING_RABBITMQ_HOST
+          value: "rabbitmq.egov-infra.svc.cluster.local"
+        - name: SPRING_RABBITMQ_PORT
+          value: "5672"
+        - name: SPRING_RABBITMQ_USERNAME
+          value: "guest"
+        - name: SPRING_RABBITMQ_PASSWORD
+          value: "guest"
         livenessProbe:
           httpGet:
             path: /actuator/health

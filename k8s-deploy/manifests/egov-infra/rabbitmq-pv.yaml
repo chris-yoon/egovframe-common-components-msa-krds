@@ -53,7 +53,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: rabbitmq-pvc
+  name: rabbitmq-pvc-nfs
   namespace: egov-infra
 spec:
   accessModes:
