@@ -1,0 +1,71 @@
+# hostPath PersistentVolume (commented out)
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: opensearch-pv-0
+#   labels:
+#     type: local
+# spec:
+#   capacity:
+#     storage: 1Gi
+#   accessModes:
+#     - ReadWriteOnce
+#   persistentVolumeReclaimPolicy: Retain
+#   storageClassName: standard
+#   hostPath:
+#     path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/opensearch"
+#     type: DirectoryOrCreate
+
+---
+
+# hostPath PersistentVolumeClaim (commented out)
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: opensearch-data-hostpath
+#   namespace: egov-db
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 1Gi
+#   storageClassName: standard
+#   volumeName: opensearch-pv-0
+
+---
+
+# NFS PersistentVolume
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: opensearch-pv-nfs
+  labels:
+    type: nfs
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-storage
+  nfs:
+    server: 192.168.56.21
+    path: "/srv/nfs/data/opensearch"
+
+---
+
+# NFS PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-opensearch-nfs
+  namespace: egov-db
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: nfs-storage
+  volumeName: opensearch-pv-nfs
