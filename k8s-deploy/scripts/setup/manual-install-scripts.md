@@ -230,6 +230,30 @@ Taints:             node-role.kubernetes.io/control-plane:NoSchedule
 kubectl taint nodes control-plane1 node-role.kubernetes.io/control-plane=:NoSchedule
 ```
 
+### 포트 포워드 
+
+Vagrantfile 을 다음과 같이 수정하여 나의 로컬에서도 서비스에 접근할 수 있다.
+
+```vagrant
+# Vagrantfile
+config.vm.network "forwarded_port", guest: 30001, host: 30001, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 30002, host: 30002, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 30003, host: 30003, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 30004, host: 30004, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 30561, host: 30561, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 31672, host: 31672, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 30090, host: 9000, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 32314, host: 32314, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 30992, host: 30992, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 9093, host: 9039, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 30011, host: 30011, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 30013, host: 30013, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 30014, host: 30014, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 30012, host: 30012, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 32080, host: 32080, protocol: "tcp"
+config.vm.network "forwarded_port", guest: 30306, host: 30306, protocol: "tcp"
+```
+
 ## 2. Istio 설치
 
 ```bash
