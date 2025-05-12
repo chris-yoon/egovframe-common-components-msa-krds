@@ -126,7 +126,8 @@ egov:
 
 app:
   search-config-path: ${APP_SEARCH_CONFIG_PATH:/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/EgovSearch-config/config/searchConfig.json}
-
+  openapi:
+    server-url: http://192.168.100.116:30992
 ---
 spring:
   config:
