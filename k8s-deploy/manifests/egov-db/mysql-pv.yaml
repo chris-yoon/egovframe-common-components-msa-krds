@@ -46,7 +46,6 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: nfs-storage
   nfs:
     server: 192.168.56.21  # Replace with your NFS server IP
     path: "/srv/nfs/data/mysql"
@@ -64,5 +63,4 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: nfs-storage
   volumeName: mysql-pv-nfs

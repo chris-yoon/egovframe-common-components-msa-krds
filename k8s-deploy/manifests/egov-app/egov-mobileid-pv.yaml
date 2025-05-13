@@ -43,7 +43,6 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: nfs-storage
   nfs:
     server: 192.168.56.21
     path: "/srv/nfs/data/egov-mobileid/config"
@@ -61,5 +60,4 @@ spec:
   resources:
     requests:
       storage: 10Mi
-  storageClassName: nfs-storage
   volumeName: egov-mobileid-pv-nfs

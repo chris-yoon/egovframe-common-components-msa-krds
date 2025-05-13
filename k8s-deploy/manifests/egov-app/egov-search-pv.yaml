@@ -41,7 +41,6 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: nfs-storage
   nfs:
     server: 192.168.56.21
     path: "/srv/nfs/data/egov-search/config"
@@ -57,7 +56,6 @@ spec:
   resources:
     requests:
       storage: 1Mi
-  storageClassName: nfs-storage
   volumeName: egov-search-config-pv-nfs
 ---
 # Model PV/PVC - hostPath
@@ -103,7 +101,6 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: nfs-storage
   nfs:
     server: 192.168.56.21
     path: "/srv/nfs/data/egov-search/model"
@@ -119,7 +116,6 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: nfs-storage
   volumeName: egov-search-model-pv-nfs
 ---
 # Example PV/PVC - hostPath
@@ -165,7 +161,6 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: nfs-storage
   nfs:
     server: 192.168.56.21
     path: "/srv/nfs/data/egov-search/example"
@@ -181,7 +176,6 @@ spec:
   resources:
     requests:
       storage: 1Mi
-  storageClassName: nfs-storage
   volumeName: egov-search-example-pv-nfs
 ---
 # Cacerts PV/PVC - hostPath
@@ -227,7 +221,6 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: nfs-storage
   nfs:
     server: 192.168.56.21
     path: "/srv/nfs/data/egov-search/cacerts"
@@ -243,5 +236,4 @@ spec:
   resources:
     requests:
       storage: 1Mi
-  storageClassName: nfs-storage
   volumeName: egov-search-cacerts-pv-nfs
