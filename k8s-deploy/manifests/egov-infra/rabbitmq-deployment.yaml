@@ -13,6 +13,11 @@ spec:
       labels:
         app: rabbitmq
     spec:
+      # 컨테이너를 rabbitmq 사용자(UID 999)로 실행
+      securityContext:
+        fsGroup: 999
+        runAsUser: 999
+        runAsGroup: 999
       containers:
       - name: rabbitmq
         image: rabbitmq:3-management

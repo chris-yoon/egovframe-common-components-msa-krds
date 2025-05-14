@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: postgresql-pv-nfs
+  name: opensearch-pv-nfs
   labels:
     type: nfs
 spec:
@@ -14,7 +14,7 @@ spec:
   storageClassName: standard
   nfs:
     server: 192.168.64.1
-    path: "/Users/chrisyoon/nfs-share/data/postgresql"
+    path: "/Users/chrisyoon/nfs-share/data/opensearch"
 
 ---
 
@@ -22,7 +22,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: postgresql-pvc-nfs
+  name: opensearch-pvc-nfs
   namespace: egov-db
 spec:
   accessModes:
@@ -30,5 +30,5 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  volumeName: postgresql-pv-nfs
+  volumeName: opensearch-pv-nfs
   storageClassName: standard

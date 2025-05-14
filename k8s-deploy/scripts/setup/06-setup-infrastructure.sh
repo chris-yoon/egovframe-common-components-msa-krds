@@ -23,8 +23,7 @@ echo -e "${GREEN}Creating RabbitMQ ConfigMap...${NC}"
 kubectl apply -f ../../manifests/egov-infra/rabbitmq-configmap.yaml
 
 echo -e "${GREEN}Creating RabbitMQ PV and PVC...${NC}"
-export DATA_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.data_base_path}')
-envsubst '${DATA_BASE_PATH}' < ../../manifests/egov-infra/rabbitmq-pv.yaml | kubectl apply -f -
+kubectl apply -f ../../manifests/egov-infra/rabbitmq-pv.yaml
 
 echo -e "${GREEN}Creating RabbitMQ Deployment...${NC}"
 kubectl apply -f ../../manifests/egov-infra/rabbitmq-deployment.yaml

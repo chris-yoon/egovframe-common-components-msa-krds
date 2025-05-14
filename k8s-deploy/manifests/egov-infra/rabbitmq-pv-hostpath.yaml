@@ -1,32 +1,31 @@
-# NFS PersistentVolume
+# hostPath PersistentVolume
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: rabbitmq-pv-nfs
+  name: rabbitmq-pv-hostpath
   namespace: egov-infra
 spec:
   capacity:
     storage: 10Mi
   accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
+    - ReadWriteOnce
+  hostPath:
+    path: "${DATA_BASE_PATH}/rabbitmq"
+    type: DirectoryOrCreate
   storageClassName: standard
-  nfs:
-    server: 192.168.64.1
-    path: "/Users/chrisyoon/nfs-share/data/rabbitmq"
 
 ---
-# NFS PersistentVolumeClaim
+# hostPath PersistentVolumeClaim
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: rabbitmq-pvc-nfs
+  name: rabbitmq-pvc-hostpath
   namespace: egov-infra
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 10Mi
-  volumeName: rabbitmq-pv-nfs
   storageClassName: standard
+  volumeName: rabbitmq-pv-hostpath

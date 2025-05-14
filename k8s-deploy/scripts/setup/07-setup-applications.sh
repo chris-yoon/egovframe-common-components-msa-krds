@@ -42,13 +42,11 @@ kubectl get secret mysql-secret -n egov-db -o yaml | sed 's/namespace: egov-db/n
 
 # MobileId PV/PVC 생성
 echo -e "${GREEN}Creating MobileId PV and PVC...${NC}"
-export MOBILEID_CONFIG_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.mobileid_config_path}')
-envsubst '${MOBILEID_CONFIG_PATH}' < "../../manifests/egov-app/egov-mobileid-pv.yaml" | kubectl apply -f -
+kubectl apply -f "../../manifests/egov-app/egov-mobileid-pv.yaml"
 
 # EgovSearch PV/PVC 생성
 echo -e "${GREEN}Creating EgovSearch PV and PVC...${NC}"
-export SEARCH_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.search_base_path}')
-envsubst '${SEARCH_BASE_PATH}' < "../../manifests/egov-app/egov-search-pv.yaml" | kubectl apply -f -
+kubectl apply -f "../../manifests/egov-app/egov-search-pv.yaml"
 
 # 각 서비스 배포
 SERVICES=(
@@ -61,6 +59,7 @@ SERVICES=(
     "egov-questionnaire"
     "egov-cmmncode"
     "egov-search"
+    "egov-common-all"
 )
 
 # 먼저 모든 서비스 배포

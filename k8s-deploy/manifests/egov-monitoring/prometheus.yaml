@@ -455,40 +455,6 @@ spec:
     app.kubernetes.io/name: prometheus
     app.kubernetes.io/instance: prometheus
 ---
-# NFS PersistentVolume
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: prometheus-pv-nfs
-  labels:
-    type: nfs
-    app: prometheus
-spec:
-  capacity:
-    storage: 20Gi
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: nfs-storage
-  nfs:
-    server: 192.168.56.21
-    path: "/srv/nfs/data/prometheus"
----
-# NFS PersistentVolumeClaim
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: prometheus-pvc-nfs
-  namespace: egov-monitoring
-spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 20Gi
-  storageClassName: nfs-storage
-  volumeName: prometheus-pv-nfs
----
 # Source: prometheus/templates/deploy.yaml
 apiVersion: apps/v1
 kind: Deployment

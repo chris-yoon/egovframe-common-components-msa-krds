@@ -33,6 +33,11 @@ spec:
       labels:
         app: mysql
     spec:
+      # MySQL 컨테이너에 루트 권한 부여
+      securityContext:
+        fsGroup: 999
+        runAsUser: 999
+        runAsGroup: 999
       containers:
       - name: mysql
         image: mysql:8.0-oracle

@@ -190,6 +190,13 @@ start_single_service() {
 
 # 메인 로직
 if [ $# -eq 1 ]; then
+    if [ "$1" == "mysql" ]; then
+        # MySQL만 시작
+        check_mysql
+        echo -e "${GREEN}MySQL service has been started${NC}"
+        exit 0
+    fi
+
     # 서비스 이름이 유효한지 확인
     if ! is_valid_service "$1"; then
         echo -e "${RED}Error: Invalid service name '$1'${NC}"

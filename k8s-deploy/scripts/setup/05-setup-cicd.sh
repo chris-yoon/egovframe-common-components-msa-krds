@@ -45,31 +45,9 @@ wait_for_resource() {
     check_error "waiting for ${resource_type} ${resource_name}"
 }
 
-# 함수: 데이터 디렉토리 생성
-create_data_directories() {
-    echo -e "${YELLOW}Creating data directories...${NC}"
-    
-    # ConfigMap에서 DATA_BASE_PATH 가져오기
-    DATA_BASE_PATH=$(kubectl get configmap egov-global-config -o jsonpath='{.data.data_base_path}')
-    
-    if [ -z "$DATA_BASE_PATH" ]; then
-        echo -e "${RED}DATA_BASE_PATH not found in ConfigMap${NC}"
-        exit 1
-    fi
-
-    mkdir -p ${DATA_BASE_PATH}/{jenkins,harbor,sonarqube,nexus}
-    chmod 777 ${DATA_BASE_PATH}/{jenkins,harbor,sonarqube,nexus}
-    
-    echo -e "${GREEN}Data directories created successfully${NC}"
-}
-
 # CICD 네임스페이스 생성
 echo -e "\n${YELLOW}Creating egov-cicd namespace...${NC}"
 kubectl create namespace egov-cicd 2>/dev/null || true
-
-# 데이터 디렉토리 생성
-create_data_directories
-check_error "Creating data directories"
 
 # Jenkins StatefulSet 배포
 echo -e "\n${YELLOW}Deploying Jenkins StatefulSet...${NC}"

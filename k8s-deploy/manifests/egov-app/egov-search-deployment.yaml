@@ -61,7 +61,7 @@ spec:
         - name: SPRING_RABBITMQ_PASSWORD
           value: "guest"
         - name: APP_OPENAPI_SERVER_URL
-          value: "http://192.168.100.116:30992"
+          value: "http://localhost:30992"
         volumeMounts:
         - name: search-config
           mountPath: /app/config

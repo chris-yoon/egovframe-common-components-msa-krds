@@ -1,34 +1,33 @@
-# NFS PersistentVolume
+# hostPath PersistentVolume
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: postgresql-pv-nfs
+  name: mysql-pv-hostpath
   labels:
-    type: nfs
+    type: local
 spec:
   capacity:
     storage: 1Gi
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   storageClassName: standard
-  nfs:
-    server: 192.168.64.1
-    path: "/Users/chrisyoon/nfs-share/data/postgresql"
+  hostPath:
+    path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/mysql"
+    type: DirectoryOrCreate
 
 ---
-
-# NFS PersistentVolumeClaim
+# hostPath PersistentVolumeClaim
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: postgresql-pvc-nfs
+  name: mysql-pvc-hostpath
   namespace: egov-db
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
-  volumeName: postgresql-pv-nfs
   storageClassName: standard
+  volumeName: mysql-pv-hostpath

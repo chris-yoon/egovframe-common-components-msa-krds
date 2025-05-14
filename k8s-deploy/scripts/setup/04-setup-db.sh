@@ -12,6 +12,15 @@ setup_mysql() {
 
     # MySQL 리소스 생성
     echo -e "${GREEN}Creating MySQL resources...${NC}"
+    kubectl apply -f ../../manifests/egov-db/mysql-pv.yaml
+
+    # PVC 바인딩 상태 확인
+    echo -e "${YELLOW}Waiting for MySQL PVC to be bound...${NC}"
+    while [[ $(kubectl get pvc mysql-pvc-nfs -n egov-db -o jsonpath='{.status.phase}') != "Bound" ]]; do
+        echo -e "${YELLOW}Waiting for PVC to be bound...${NC}"
+        sleep 5
+    done
+
     kubectl apply -f ../../manifests/egov-db/mysql.yaml
 
     # MySQL 배포 상태 확인
@@ -41,6 +50,15 @@ setup_opensearch() {
 
     # OpenSearch 리소스 생성
     echo -e "${GREEN}Creating OpenSearch resources...${NC}"
+    kubectl apply -f ../../manifests/egov-db/opensearch-pv.yaml
+
+    # PVC 바인딩 상태 확인
+    echo -e "${YELLOW}Waiting for OpenSearch PVC to be bound...${NC}"
+    while [[ $(kubectl get pvc opensearch-pvc-nfs -n egov-db -o jsonpath='{.status.phase}') != "Bound" ]]; do
+        echo -e "${YELLOW}Waiting for PVC to be bound...${NC}"
+        sleep 5
+    done
+
     kubectl apply -f ../../manifests/egov-db/opensearch.yaml
 
     # OpenSearch Dashboard 생성
@@ -82,7 +100,7 @@ setup_postgresql() {
 
     # PVC 바인딩 상태 확인
     echo -e "${YELLOW}Waiting for PostgreSQL PVC to be bound...${NC}"
-    while [[ $(kubectl get pvc postgresql-data-0 -n egov-db -o jsonpath='{.status.phase}') != "Bound" ]]; do
+    while [[ $(kubectl get pvc postgresql-pvc-nfs -n egov-db -o jsonpath='{.status.phase}') != "Bound" ]]; do
         echo -e "${YELLOW}Waiting for PVC to be bound...${NC}"
         sleep 5
     done
@@ -109,7 +127,7 @@ setup_redis() {
 
     # PVC 바인딩 상태 확인
     echo -e "${YELLOW}Waiting for Redis PVC to be bound...${NC}"
-    while [[ $(kubectl get pvc data-redis-0 -n egov-db -o jsonpath='{.status.phase}') != "Bound" ]]; do
+    while [[ $(kubectl get pvc redis-pvc-nfs -n egov-db -o jsonpath='{.status.phase}') != "Bound" ]]; do
         echo -e "${YELLOW}Waiting for PVC to be bound...${NC}"
         sleep 5
     done

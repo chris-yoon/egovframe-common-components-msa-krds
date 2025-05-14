@@ -89,10 +89,10 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: nfs-storage
+  storageClassName: standard
   nfs:
-    server: 192.168.56.21
-    path: "/srv/nfs/data/jenkins"
+    server: 192.168.64.1
+    path: "/Users/chrisyoon/nfs-share/data/jenkins"
 
 ---
 
@@ -108,8 +108,8 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  storageClassName: nfs-storage
   volumeName: jenkins-pv-nfs
+  storageClassName: standard
 
 ---
 

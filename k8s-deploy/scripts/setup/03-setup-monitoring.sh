@@ -61,6 +61,17 @@ echo -e "${YELLOW}Setting up AlertManager configuration...${NC}"
 kubectl apply -f "../../manifests/egov-monitoring/alertmanager-config.yaml"
 kubectl apply -f "../../manifests/egov-monitoring/circuit-breaker-alerts-configmap.yaml"
 
+# PV 생성
+echo -e "${YELLOW}Creating Prometheus PV...${NC}"
+kubectl apply -f "../../manifests/egov-monitoring/prometheus-pv.yaml"
+
+# PVC 바인딩 상태 확인
+echo -e "${YELLOW}Waiting for Prometheus PVC to be bound...${NC}"
+while [[ $(kubectl get pvc prometheus-pvc-nfs -n egov-monitoring -o jsonpath='{.status.phase}') != "Bound" ]]; do
+    echo -e "${YELLOW}Waiting for PVC to be bound...${NC}"
+    sleep 5
+done
+
 # 모니터링 컴포넌트 설치
 echo -e "${YELLOW}Installing monitoring components...${NC}"
 for addon in prometheus grafana kiali jaeger loki alertmanager; do

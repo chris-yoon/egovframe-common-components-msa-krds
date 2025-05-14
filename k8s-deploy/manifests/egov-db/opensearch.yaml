@@ -125,10 +125,10 @@ spec:
       - name: data
         persistentVolumeClaim:
           # To use hostPath storage, uncomment this and comment out the NFS claim
-          # claimName: opensearch-data-hostpath
+          # claimName: opensearch-pvc-hostpath
           
           # Using NFS storage
-          claimName: data-opensearch-nfs
+          claimName: opensearch-pvc-nfs
 
 ---
 

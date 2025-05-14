@@ -1,32 +1,32 @@
-# NFS PersistentVolume
+# hostPath PersistentVolume
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: egov-mobileid-pv-nfs
+  name: egov-mobileid-pv-hostpath
   namespace: egov-app
 spec:
   capacity:
     storage: 10Mi
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   storageClassName: standard
-  nfs:
-    server: 192.168.64.1
-    path: "/Users/chrisyoon/nfs-share/data/egov-mobileid/config"
-
+  hostPath:
+    path: "${MOBILEID_CONFIG_PATH}"
+    type: DirectoryOrCreate
 ---
-# NFS PersistentVolumeClaim
+# hostPath PersistentVolumeClaim
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: egov-mobileid-pvc-nfs
+  name: egov-mobileid-pvc-hostpath
   namespace: egov-app
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 10Mi
-  volumeName: egov-mobileid-pv-nfs
   storageClassName: standard
+  volumeName: egov-mobileid-pv-hostpath
+

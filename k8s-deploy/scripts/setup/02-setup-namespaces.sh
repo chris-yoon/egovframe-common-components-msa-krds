@@ -6,11 +6,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# 전역 ConfigMap 생성
-echo -e "${YELLOW}Creating global configuration...${NC}"
-kubectl apply -f ../../manifests/common/egov-global-configmap.yaml
-echo -e "${GREEN}Global configuration created${NC}"
-
 # 네임스페이스 생성 함수
 create_namespace() {
     local ns=$1

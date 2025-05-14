@@ -12,8 +12,8 @@ cleanup_mysql() {
     kubectl delete -f ../../manifests/egov-db/mysql.yaml 2>/dev/null || true
 
     echo -e "${GREEN}Removing MySQL PV and PVC...${NC}"
-    kubectl delete pvc data-mysql-0 -n egov-db --force --grace-period=0 2>/dev/null || true
-    kubectl delete pv mysql-pv-0 --force --grace-period=0 2>/dev/null || true
+    kubectl delete pvc mysql-pvc-nfs -n egov-db --force --grace-period=0 2>/dev/null || true
+    kubectl delete pv mysql-pv-nfs --force --grace-period=0 2>/dev/null || true
 
     # 리소스 제거 완료 대기
     echo -e "\n${YELLOW}Waiting for MySQL resources to be terminated...${NC}"
@@ -39,17 +39,19 @@ cleanup_opensearch() {
     echo -e "${GREEN}Removing OpenSearch StatefulSet and Services...${NC}"
     kubectl delete -f ../../manifests/egov-db/opensearch.yaml 2>/dev/null || true
 
+    kubectl delete -f ../../manifests/egov-db/opensearch-pv.yaml 2>/dev/null || true
+
     # PVC가 Terminating 상태인 경우 강제 삭제
-    if kubectl get pvc data-opensearch-0 -n egov-db 2>/dev/null | grep Terminating; then
+    if kubectl get pvc opensearch-pvc-nfs -n egov-db 2>/dev/null | grep Terminating; then
         echo -e "${YELLOW}PVC stuck in Terminating state, forcing deletion...${NC}"
-        kubectl delete pvc data-opensearch-0 -n egov-db --force --grace-period=0
+        kubectl delete pvc opensearch-pvc-nfs -n egov-db --force --grace-period=0
     fi
 
     # PV가 Terminating 상태인 경우 강제 삭제
-    if kubectl get pv opensearch-pv-0 2>/dev/null | grep Terminating; then
+    if kubectl get pv opensearch-pv-nfs 2>/dev/null | grep Terminating; then
         echo -e "${YELLOW}PV stuck in Terminating state, forcing deletion...${NC}"
-        kubectl patch pv opensearch-pv-0 -p '{"metadata":{"finalizers":null}}'
-        kubectl delete pv opensearch-pv-0 --force --grace-period=0
+        kubectl patch pv opensearch-pv-nfs -p '{"metadata":{"finalizers":null}}'
+        kubectl delete pv opensearch-pv-nfs --force --grace-period=0
     fi
 
     # 리소스 제거 완료 대기
@@ -77,16 +79,16 @@ cleanup_postgresql() {
     kubectl delete -f ../../manifests/egov-db/postgresql-pv.yaml 2>/dev/null || true
 
     # PVC가 Terminating 상태인 경우 강제 삭제
-    if kubectl get pvc postgresql-data-0 -n egov-db 2>/dev/null | grep Terminating; then
+    if kubectl get pvc postgresql-pvc-nfs -n egov-db 2>/dev/null | grep Terminating; then
         echo -e "${YELLOW}PVC stuck in Terminating state, forcing deletion...${NC}"
-        kubectl delete pvc postgresql-data-0 -n egov-db --force --grace-period=0
+        kubectl delete pvc postgresql-pvc-nfs -n egov-db --force --grace-period=0
     fi
 
     # PV가 Terminating 상태인 경우 강제 삭제
-    if kubectl get pv postgresql-pv-0 2>/dev/null | grep Terminating; then
+    if kubectl get pv postgresql-pv-nfs 2>/dev/null | grep Terminating; then
         echo -e "${YELLOW}PV stuck in Terminating state, forcing deletion...${NC}"
-        kubectl patch pv postgresql-pv-0 -p '{"metadata":{"finalizers":null}}'
-        kubectl delete pv postgresql-pv-0 --force --grace-period=0
+        kubectl patch pv postgresql-pv-nfs -p '{"metadata":{"finalizers":null}}'
+        kubectl delete pv postgresql-pv-nfs --force --grace-period=0
     fi
 
     echo -e "\n${GREEN}PostgreSQL cleanup completed!${NC}"
@@ -101,16 +103,16 @@ cleanup_redis() {
     kubectl delete -f ../../manifests/egov-db/redis-pv.yaml 2>/dev/null || true
 
     # PVC가 Terminating 상태인 경우 강제 삭제
-    if kubectl get pvc redis-data-0 -n egov-db 2>/dev/null | grep Terminating; then
+    if kubectl get pvc redis-pvc-nfs -n egov-db 2>/dev/null | grep Terminating; then
         echo -e "${YELLOW}PVC stuck in Terminating state, forcing deletion...${NC}"
-        kubectl delete pvc redis-data-0 -n egov-db --force --grace-period=0
+        kubectl delete pvc redis-pvc-nfs -n egov-db --force --grace-period=0
     fi
 
     # PV가 Terminating 상태인 경우 강제 삭제
-    if kubectl get pv redis-pv-0 2>/dev/null | grep Terminating; then
+    if kubectl get pv redis-pv-nfs 2>/dev/null | grep Terminating; then
         echo -e "${YELLOW}PV stuck in Terminating state, forcing deletion...${NC}"
-        kubectl patch pv redis-pv-0 -p '{"metadata":{"finalizers":null}}'
-        kubectl delete pv redis-pv-0 --force --grace-period=0
+        kubectl patch pv redis-pv-nfs -p '{"metadata":{"finalizers":null}}'
+        kubectl delete pv redis-pv-nfs --force --grace-period=0
     fi
 
     echo -e "\n${GREEN}Redis cleanup completed!${NC}"

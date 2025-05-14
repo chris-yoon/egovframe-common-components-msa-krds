@@ -126,6 +126,7 @@ vagrant ssh control-plane1 -c "sudo tar -xzf /tmp/EgovMobileId-config.tar.gz -C 
 # PV 및 PVC 파일 수정
 cd /{프로젝트 경로}/k8s-deploy/manifests
 # 다음 PV, PVC 파일에서 nfs 서버 주소, path를 확인/수정한다.
+egov-monitoring/prometheus-pv.yaml
 egov-db/mysql-pv.yaml
 egov-db/opensearch-pv.yaml
 egov-db/postgresql-pv.yaml
@@ -135,6 +136,7 @@ egov-app/egov-mobileid-pv.yaml
 egov-app/egov-search-pv.yaml
 
 # 다음 파일에서 persistentVolumeClaim 명을 확인/수정한다.
+egov-monitoring/prometheus.yaml
 egov-db/mysql.yaml
 egov-db/opensearch.yaml
 egov-db/postgresql.yaml

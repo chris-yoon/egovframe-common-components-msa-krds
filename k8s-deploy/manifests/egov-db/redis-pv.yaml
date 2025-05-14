@@ -1,40 +1,3 @@
-# hostPath PersistentVolume
-# apiVersion: v1
-# kind: PersistentVolume
-# metadata:
-#   name: redis-pv-hostpath
-#   labels:
-#     type: local
-# spec:
-#   capacity:
-#     storage: 1Gi
-#   accessModes:
-#     - ReadWriteOnce
-#   persistentVolumeReclaimPolicy: Retain
-#   storageClassName: standard
-#   hostPath:
-#     path: "/Users/chrisyoon/Projects/egovframe/egovframe-common-components-msa-krds/k8s-deploy/data/redis"
-#     type: DirectoryOrCreate
-
----
-
-# hostPath PersistentVolumeClaim
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: redis-pvc-hostpath
-#   namespace: egov-db
-# spec:
-#   accessModes:
-#     - ReadWriteOnce
-#   resources:
-#     requests:
-#       storage: 1Gi
-#   storageClassName: standard
-#   volumeName: redis-pv-hostpath
-
----
-
 # NFS PersistentVolume
 apiVersion: v1
 kind: PersistentVolume
@@ -48,9 +11,10 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
   nfs:
-    server: 192.168.56.21
-    path: "/srv/nfs/data/redis"
+    server: 192.168.64.1
+    path: "/Users/chrisyoon/nfs-share/data/redis"
 
 ---
 
@@ -67,3 +31,4 @@ spec:
     requests:
       storage: 1Gi
   volumeName: redis-pv-nfs
+  storageClassName: standard

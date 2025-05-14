@@ -254,7 +254,7 @@ check_redis
 
 # 5. CICD 설정
 echo -e "\n${YELLOW}[5/7] Setting up CICD...${NC}"
-${SCRIPT_DIR}/08-setup-cicd.sh
+${SCRIPT_DIR}/05-setup-cicd.sh
 check_error "CICD setup"
 
 # 6. Infrastructure 설정
