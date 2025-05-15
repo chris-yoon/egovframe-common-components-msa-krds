@@ -56,12 +56,19 @@ kubectl delete service redis -n egov-db --ignore-not-found=true
 
 # PVC 제거
 echo -e "\n${YELLOW}Removing Persistent Volume Claims...${NC}"
-kubectl delete pvc -l app=jenkins -n egov-cicd --ignore-not-found=true
-kubectl delete pvc -l app=gitlab -n egov-cicd --ignore-not-found=true
-kubectl delete pvc -l app=nexus -n egov-cicd --ignore-not-found=true
-kubectl delete pvc -l app=sonarqube -n egov-cicd --ignore-not-found=true
-kubectl delete pvc -l app=postgresql -n egov-db --ignore-not-found=true
-kubectl delete pvc -l app=redis -n egov-db --ignore-not-found=true
+kubectl delete pvc jenkins-pvc-nfs -n egov-cicd --ignore-not-found=true
+kubectl delete pvc gitlab-pvc-nfs -n egov-cicd --ignore-not-found=true
+kubectl delete pvc nexus-pvc-nfs -n egov-cicd --ignore-not-found=true
+kubectl delete pvc sonarqube-pvc-nfs -n egov-cicd --ignore-not-found=true
+kubectl delete pvc postgresql-pvc-nfs -n egov-db --ignore-not-found=true
+kubectl delete pvc redis-pvc-nfs -n egov-db --ignore-not-found=true
+
+# PV 제거
+echo -e "\n${YELLOW}Removing Persistent Volumes...${NC}"
+kubectl delete pv jenkins-pv-nfs --ignore-not-found=true
+kubectl delete pv gitlab-pv-nfs --ignore-not-found=true
+kubectl delete pv nexus-pv-nfs --ignore-not-found=true
+kubectl delete pv sonarqube-pv-nfs --ignore-not-found=true
 
 # ConfigMaps 제거
 echo -e "\n${YELLOW}Removing ConfigMaps...${NC}"
